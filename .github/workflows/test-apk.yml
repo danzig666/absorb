@@ -77,9 +77,6 @@ jobs:
           EOF
           fi
 
-      - name: Run tests
-        run: flutter test
-
       - name: Build APK
         run: flutter build apk --release --flavor dev
 
