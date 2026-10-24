@@ -190,6 +190,17 @@ class TranscriptLineStore {
     return out;
   }
 
+  /// Every heard (not estimated) line overlapping [from]..[to], in order.
+  /// Silence placeholders are left out. Call [hydrate] first.
+  List<TranscriptLine> between(String key, double from, double to) {
+    final lines = _cache[key];
+    if (lines == null || lines.isEmpty) return const [];
+    return [
+      for (final l in lines)
+        if (l.end >= from && l.start <= to && !l.approx && l.text.trim().isNotEmpty) l,
+    ];
+  }
+
   /// Total seconds of this item that have been transcribed, gaps excluded.
   /// Silence placeholders count - that stretch is done with either way.
   double preparedSeconds(String key) {

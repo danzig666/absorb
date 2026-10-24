@@ -17,6 +17,11 @@ enum PlaybackEventType {
   sessionStart,
   sessionEnd,
   clickDebounce,
+  // Something only a person who is awake does: shaking to extend the sleep
+  // timer, snoozing it from the headphones, adding time by hand.
+  awake,
+  // The sleep timer ran out and paused playback.
+  sleepTimer,
 }
 
 /// Events that only show in the sheet when the user enables advanced mode.
@@ -99,6 +104,11 @@ class PlaybackEvent {
       case PlaybackEventType.clickDebounce:
         if (detail != null && detail!.isNotEmpty) return 'Media button: $detail';
         return 'Media button';
+      case PlaybackEventType.awake:
+        if (detail != null && detail!.isNotEmpty) return detail!;
+        return 'Still awake';
+      case PlaybackEventType.sleepTimer:
+        return 'Sleep timer paused playback';
     }
   }
 
@@ -130,6 +140,10 @@ class PlaybackEvent {
         return '🔴';
       case PlaybackEventType.clickDebounce:
         return '🖲';
+      case PlaybackEventType.awake:
+        return '👋';
+      case PlaybackEventType.sleepTimer:
+        return '🌙';
     }
   }
 }
@@ -141,6 +155,7 @@ class PlaybackHistoryService {
   PlaybackHistoryService._();
 
   static const int _maxEventsPerBook = 1000;
+  static const _syncKeepEvery = Duration(minutes: 5);
 
   /// Log an event for a book.
   Future<void> log({
@@ -158,6 +173,21 @@ class PlaybackHistoryService {
 
     final key = 'playback_history_$itemId';
     final existing = await ScopedPrefs.getStringList(key);
+
+    // Server syncs land every 20 seconds and would push the evening out of
+    // the history overnight. A run of them keeps one every few minutes plus
+    // the latest - plenty to tell where the book was at any time.
+    if (type == PlaybackEventType.syncServer && existing.length >= 2) {
+      try {
+        final last = PlaybackEvent.fromJson(jsonDecode(existing.last));
+        final prev = PlaybackEvent.fromJson(jsonDecode(existing[existing.length - 2]));
+        if (last.type == PlaybackEventType.syncServer &&
+            prev.type == PlaybackEventType.syncServer &&
+            event.timestamp.difference(prev.timestamp) < _syncKeepEvery) {
+          existing.removeLast();
+        }
+      } catch (_) {}
+    }
 
     existing.add(jsonEncode(event.toJson()));
 

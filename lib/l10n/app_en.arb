@@ -6060,5 +6060,67 @@
   "comicLeftToRight": "Left to right",
   "comicRightToLeft": "Right to left (manga)",
   "comicNeedsConnection": "This comic opens page by page from your server, so it needs a connection.",
-  "comicNoPages": "No pages found in this comic."
+  "comicNoPages": "No pages found in this comic.",
+  "sleepSpotButton": "Fell asleep?",
+  "sleepSpotTitle": "Where did I fall asleep?",
+  "sleepSpotIntro": "Find your spot from the last thing you did while awake, from the clock, or from the words you remember.",
+  "sleepSpotLastAwake": "Last sign you were awake",
+  "sleepSpotNoAwake": "Nothing recorded yet. Starting the sleep timer, shaking to extend it or snoozing it from your headphones marks that you were still awake.",
+  "sleepSpotTimerPaused": "Sleep timer paused at {time}",
+  "@sleepSpotTimerPaused": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sleepSpotClockTitle": "Jump to a clock time",
+  "sleepSpotPickTime": "Pick a time",
+  "sleepSpotAtTime": "At {time} the book was at {position}",
+  "@sleepSpotAtTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "position": {
+        "type": "String"
+      }
+    }
+  },
+  "sleepSpotNoHistoryForTime": "The playback history doesn't reach back to {time}.",
+  "@sleepSpotNoHistoryForTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sleepSpotJump": "Jump here",
+  "sleepSpotShowText": "Show text",
+  "sleepSpotTextTitle": "What was playing around {time}",
+  "@sleepSpotTextTitle": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sleepSpotTextHint": "Tap the last line you remember to carry on from there.",
+  "sleepSpotNoText": "There's no transcript of this part yet.",
+  "sleepSpotTranscribe": "Transcribe this part",
+  "sleepSpotTranscribing": "Transcribing {done} of {total}...",
+  "@sleepSpotTranscribing": {
+    "placeholders": {
+      "done": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "sleepSpotEarlier": "Earlier",
+  "sleepSpotLater": "Later",
+  "sleepSpotNeedsActive": "Start playing this book first, then jump.",
+  "sleepSpotNoPodcastText": "Reading back the text works for audiobooks only."
 }

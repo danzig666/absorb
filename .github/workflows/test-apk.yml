@@ -1,0 +1,102 @@
+name: Test APK
+
+# Builds an installable APK of a work branch for trying changes on a phone.
+# Uses the dev flavor, so it installs beside the Play Store / GitHub app
+# ("Absorb Dev") instead of replacing it. The APK is attached to the run as an
+# artifact.
+#
+# Signing: uses ANDROID_KEYSTORE_BASE64 & co. when the repo has them. Without
+# them a throwaway key is generated once and kept in the Actions cache, so
+# later test builds still install over the earlier one.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "claude/**"
+
+jobs:
+  build:
+    name: Build dev APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Read Flutter version
+        id: flutter
+        run: echo "version=$(cat .flutter-version)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ steps.flutter.outputs.version }}
+          cache: true
+
+      - name: Restore test signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.absorb-test-key
+          key: absorb-test-signing-key-v1
+
+      - name: Set up Android signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/absorb-key.jks"
+            cat > android/key.properties <<EOF
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=$RUNNER_TEMP/absorb-key.jks
+          EOF
+          else
+            KEY_DIR="$HOME/.absorb-test-key"
+            if [ ! -f "$KEY_DIR/test.jks" ]; then
+              mkdir -p "$KEY_DIR"
+              keytool -genkeypair -v -keystore "$KEY_DIR/test.jks" \
+                -alias absorbtest -keyalg RSA -keysize 2048 -validity 10000 \
+                -storepass absorbtest -keypass absorbtest \
+                -dname "CN=Absorb test build"
+            fi
+            cat > android/key.properties <<EOF
+          storePassword=absorbtest
+          keyPassword=absorbtest
+          keyAlias=absorbtest
+          storeFile=$KEY_DIR/test.jks
+          EOF
+          fi
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Build APK
+        run: flutter build apk --release --flavor dev
+
+      - name: Name the APK
+        id: apk
+        run: |
+          RAW=$(grep '^version:' pubspec.yaml | sed 's/version: *//')
+          SHA=$(git rev-parse --short HEAD)
+          NAME="absorb-dev-${RAW//+/-}-$SHA"
+          SRC=$(ls build/app/outputs/flutter-apk/*dev-release*.apk build/app/outputs/apk/dev/release/*.apk 2>/dev/null | head -1)
+          [ -n "$SRC" ] || { echo "APK not found"; find build/app/outputs -name '*.apk'; exit 1; }
+          mkdir -p out
+          cp "$SRC" "out/$NAME.apk"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.apk.outputs.name }}
+          path: out/*.apk
+          retention-days: 30

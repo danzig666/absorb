@@ -36,6 +36,7 @@ import 'feature_hint.dart';
 import 'listening_session_card.dart';
 import 'notes_sheet.dart';
 import 'overlay_toast.dart';
+import 'sleep_spot_sheet.dart';
 import 'sleep_timer_sheet.dart';
 import 'transcription_download_prompt.dart';
 
@@ -1908,6 +1909,12 @@ class CardActionDelegate {
           accent: accent, isActive: true, alwaysEnabled: true, large: large, compact: compact, iconsOnly: iconsOnly,
           onTap: () => showHistory(context, accent, tt),
         );
+      case 'sleepspot':
+        return CardWideButton(
+          icon: Icons.bedtime_rounded, label: l.sleepSpotButton,
+          accent: accent, isActive: true, alwaysEnabled: true, large: large, compact: compact, iconsOnly: iconsOnly,
+          onTap: () => showSleepSpot(context, accent),
+        );
       case 'remove':
         return CardWideButton(
           icon: Icons.remove_circle_outline_rounded, label: (compact || short) ? l.remove : Wording.of(context).removeFromAbsorbing,
@@ -2074,6 +2081,11 @@ class CardActionDelegate {
           icon: Icons.history_rounded, label: l.playbackHistory, accent: accent,
           enabled: true,
           onTap: () { Navigator.pop(ctx); showHistory(context, accent, tt); },
+        );
+      case 'sleepspot':
+        return MoreMenuItem(
+          icon: Icons.bedtime_rounded, label: l.sleepSpotButton, accent: accent,
+          onTap: () { Navigator.pop(ctx); showSleepSpot(context, accent); },
         );
       case 'remove':
         return MoreMenuItem(
@@ -2308,6 +2320,16 @@ class CardActionDelegate {
       context,
       episodeId != null ? l.noChaptersPodcast : l.noChaptersBook,
       icon: Icons.list_rounded,
+    );
+  }
+
+  void showSleepSpot(BuildContext ctx, Color accent) {
+    showSleepSpotSheet(
+      ctx,
+      itemId: itemId,
+      episodeId: episodeId ?? (isPodcastEpisode ? player.currentEpisodeId : null),
+      accent: accent,
+      player: player,
     );
   }
 
@@ -2597,6 +2619,7 @@ class _PlaybackHistorySheetBodyState extends State<_PlaybackHistoryBody>
             ],
           ),
         ),
+        if (_selectedTab == 0) _buildSleepSpotEntry(l),
         if (_selectedTab == 0) _buildLocalOptions(l, cs),
         Expanded(
           child: _selectedTab == 0
@@ -2604,6 +2627,30 @@ class _PlaybackHistorySheetBodyState extends State<_PlaybackHistoryBody>
               : _buildServerHistory(l, cs),
         ),
       ]),
+    );
+  }
+
+  Widget _buildSleepSpotEntry(AppLocalizations l) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: OutlinedButton.icon(
+        onPressed: () {
+          Navigator.pop(context);
+          showSleepSpotSheet(
+            widget.parentCtx,
+            itemId: widget.itemId,
+            episodeId: widget.episodeId,
+            accent: widget.accent,
+            player: widget.player,
+          );
+        },
+        icon: Icon(Icons.bedtime_rounded, size: 18, color: widget.accent),
+        label: Text(l.sleepSpotTitle),
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(40),
+          side: BorderSide(color: widget.accent.withValues(alpha: 0.4)),
+        ),
+      ),
     );
   }
 

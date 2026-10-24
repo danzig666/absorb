@@ -19190,6 +19190,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No pages found in this comic.'**
   String get comicNoPages;
+
+  /// No description provided for @sleepSpotButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Fell asleep?'**
+  String get sleepSpotButton;
+
+  /// No description provided for @sleepSpotTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where did I fall asleep?'**
+  String get sleepSpotTitle;
+
+  /// No description provided for @sleepSpotIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Find your spot from the last thing you did while awake, from the clock, or from the words you remember.'**
+  String get sleepSpotIntro;
+
+  /// No description provided for @sleepSpotLastAwake.
+  ///
+  /// In en, this message translates to:
+  /// **'Last sign you were awake'**
+  String get sleepSpotLastAwake;
+
+  /// No description provided for @sleepSpotNoAwake.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing recorded yet. Starting the sleep timer, shaking to extend it or snoozing it from your headphones marks that you were still awake.'**
+  String get sleepSpotNoAwake;
+
+  /// No description provided for @sleepSpotTimerPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep timer paused at {time}'**
+  String sleepSpotTimerPaused(String time);
+
+  /// No description provided for @sleepSpotClockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Jump to a clock time'**
+  String get sleepSpotClockTitle;
+
+  /// No description provided for @sleepSpotPickTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a time'**
+  String get sleepSpotPickTime;
+
+  /// No description provided for @sleepSpotAtTime.
+  ///
+  /// In en, this message translates to:
+  /// **'At {time} the book was at {position}'**
+  String sleepSpotAtTime(String time, String position);
+
+  /// No description provided for @sleepSpotNoHistoryForTime.
+  ///
+  /// In en, this message translates to:
+  /// **'The playback history doesn\'t reach back to {time}.'**
+  String sleepSpotNoHistoryForTime(String time);
+
+  /// No description provided for @sleepSpotJump.
+  ///
+  /// In en, this message translates to:
+  /// **'Jump here'**
+  String get sleepSpotJump;
+
+  /// No description provided for @sleepSpotShowText.
+  ///
+  /// In en, this message translates to:
+  /// **'Show text'**
+  String get sleepSpotShowText;
+
+  /// No description provided for @sleepSpotTextTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What was playing around {time}'**
+  String sleepSpotTextTitle(String time);
+
+  /// No description provided for @sleepSpotTextHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the last line you remember to carry on from there.'**
+  String get sleepSpotTextHint;
+
+  /// No description provided for @sleepSpotNoText.
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s no transcript of this part yet.'**
+  String get sleepSpotNoText;
+
+  /// No description provided for @sleepSpotTranscribe.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribe this part'**
+  String get sleepSpotTranscribe;
+
+  /// No description provided for @sleepSpotTranscribing.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing {done} of {total}...'**
+  String sleepSpotTranscribing(String done, String total);
+
+  /// No description provided for @sleepSpotEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier'**
+  String get sleepSpotEarlier;
+
+  /// No description provided for @sleepSpotLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get sleepSpotLater;
+
+  /// No description provided for @sleepSpotNeedsActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Start playing this book first, then jump.'**
+  String get sleepSpotNeedsActive;
+
+  /// No description provided for @sleepSpotNoPodcastText.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading back the text works for audiobooks only.'**
+  String get sleepSpotNoPodcastText;
 }
 
 class _AppLocalizationsDelegate

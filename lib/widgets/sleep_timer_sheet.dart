@@ -241,6 +241,7 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
                   _presetChip(
                       accent, l.sleepTimerSheetAddMinutesChip(mins), false, () {
                     sleep.addTime(Duration(minutes: mins));
+                    sleep.noteAwake('Added $mins min to the sleep timer');
                   }),
               ])
         else
@@ -253,6 +254,7 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
                   _presetChip(accent, l.sleepTimerSheetAddChaptersChip(ch), false,
                       () {
                     for (int i = 0; i < ch; i++) sleep.addChapter();
+                    sleep.noteAwake('Added $ch chapter(s) to the sleep timer');
                   }),
               ]),
         const SizedBox(height: 20),
@@ -436,6 +438,7 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
                 : () {
                     SleepTimerService().setTimeSleep(Duration(
                         milliseconds: (realSecondsUntil * 1000).round()));
+                    SleepTimerService().noteAwake('Started the sleep timer');
                     Navigator.pop(context);
                   },
             child: Text(
@@ -560,6 +563,7 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
               PlayerSettings.setSleepTimerMinutes(_customMinutes.round());
               SleepTimerService()
                   .setTimeSleep(Duration(minutes: _customMinutes.round()));
+              SleepTimerService().noteAwake('Started the sleep timer');
               Navigator.pop(context);
             },
             child: Text(l.startMinTimer(_customMinutes.round()),
@@ -623,6 +627,7 @@ class _SleepTimerSheetState extends State<SleepTimerSheet> {
             onPressed: () {
               PlayerSettings.setSleepTimerChapters(_customChapters);
               SleepTimerService().setChapterSleep(_customChapters);
+              SleepTimerService().noteAwake('Started the sleep timer');
               Navigator.pop(context);
             },
             child: Text(l.sleepTimerSheetStartChapterSleep(_customChapters),

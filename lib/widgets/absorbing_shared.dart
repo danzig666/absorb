@@ -72,6 +72,8 @@ IconData historyIcon(PlaybackEventType type) {
     case PlaybackEventType.sessionStart: return Icons.fiber_manual_record_rounded;
     case PlaybackEventType.sessionEnd: return Icons.stop_circle_outlined;
     case PlaybackEventType.clickDebounce: return Icons.touch_app_rounded;
+    case PlaybackEventType.awake: return Icons.waving_hand_rounded;
+    case PlaybackEventType.sleepTimer: return Icons.bedtime_rounded;
   }
 }
 

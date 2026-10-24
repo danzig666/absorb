@@ -49,6 +49,8 @@ String localizedCardButtonLabel(AppLocalizations l, CardButtonDef def) {
       return l.findInEbook;
     case 'lyrics':
       return l.lyricsMode;
+    case 'sleepspot':
+      return l.sleepSpotButton;
   }
   return def.label;
 }
@@ -74,6 +76,7 @@ const _allCardButtons = [
   CardButtonDef('cast', 'Cast to Device', Icons.cast_rounded),
   CardButtonDef('airplay', 'AirPlay', Icons.airplay_rounded),
   CardButtonDef('history', 'Playback History', Icons.history_rounded),
+  CardButtonDef('sleepspot', 'Fell asleep?', Icons.bedtime_rounded),
   CardButtonDef('remove', 'Remove from Absorbing', Icons.remove_circle_outline_rounded),
   CardButtonDef('car', 'Car Mode', Icons.directions_car_rounded),
   CardButtonDef('notes', 'Notes', Icons.note_rounded),

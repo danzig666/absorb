@@ -7,6 +7,7 @@ import 'package:vibration/vibration.dart';
 import 'scoped_prefs.dart';
 import 'audio_player_service.dart';
 import 'chromecast_service.dart';
+import 'playback_history_service.dart';
 import 'sleep_timer_tick_policy.dart';
 
 enum SleepTimerMode { off, time, chapters, episodes }
@@ -541,6 +542,7 @@ class SleepTimerService extends ChangeNotifier {
     final mode = await PlayerSettings.getSleepButtonMode();
     if (mode == 'off') return false;
     _vibrateSnooze();
+    noteAwake('Snoozed the sleep timer from the headphones');
     if (mode == 'addTime') {
       final addMins = await PlayerSettings.getShakeAddMinutes();
       addTime(Duration(minutes: addMins));
@@ -552,6 +554,21 @@ class SleepTimerService extends ChangeNotifier {
     return true;
   }
 
+  /// Record in the playback history that the listener was demonstrably
+  /// awake here. "Where did I fall asleep?" works back from the last of these.
+  void noteAwake(String detail) => _logHistory(PlaybackEventType.awake, detail);
+
+  void _logHistory(PlaybackEventType type, [String? detail]) {
+    final itemId = _player.currentItemId;
+    if (itemId == null) return;
+    PlaybackHistoryService().log(
+      itemId: itemId,
+      type: type,
+      positionSeconds: _player.position.inMilliseconds / 1000.0,
+      detail: detail,
+    );
+  }
+
   Future<void> _triggerSleep() async {
     if (_isTriggeringSleep) return;
     final pauseRequested = !_cast.isCastEngaged && _player.isPauseRequested;
@@ -561,6 +578,7 @@ class SleepTimerService extends ChangeNotifier {
     }
     _isTriggeringSleep = true;
     debugPrint('[SleepTimer] Triggering sleep — pausing playback');
+    _logHistory(PlaybackEventType.sleepTimer);
     try {
       if (_cast.isCastEngaged) {
         await _cast.pauseNowOrOnReconnect();
@@ -861,6 +879,7 @@ class SleepTimerService extends ChangeNotifier {
     debugPrint('[SleepTimer] Shake detected! mode=$_shakeMode');
 
     _vibrateSnooze();
+    noteAwake('Shook to extend the sleep timer');
 
     if (_shakeMode == 'resetTimer') {
       if (_mode == SleepTimerMode.time) {

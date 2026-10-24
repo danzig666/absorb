@@ -11132,4 +11132,82 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get comicNoPages => 'No pages found in this comic.';
+
+  @override
+  String get sleepSpotButton => 'Fell asleep?';
+
+  @override
+  String get sleepSpotTitle => 'Where did I fall asleep?';
+
+  @override
+  String get sleepSpotIntro =>
+      'Find your spot from the last thing you did while awake, from the clock, or from the words you remember.';
+
+  @override
+  String get sleepSpotLastAwake => 'Last sign you were awake';
+
+  @override
+  String get sleepSpotNoAwake =>
+      'Nothing recorded yet. Starting the sleep timer, shaking to extend it or snoozing it from your headphones marks that you were still awake.';
+
+  @override
+  String sleepSpotTimerPaused(String time) {
+    return 'Sleep timer paused at $time';
+  }
+
+  @override
+  String get sleepSpotClockTitle => 'Jump to a clock time';
+
+  @override
+  String get sleepSpotPickTime => 'Pick a time';
+
+  @override
+  String sleepSpotAtTime(String time, String position) {
+    return 'At $time the book was at $position';
+  }
+
+  @override
+  String sleepSpotNoHistoryForTime(String time) {
+    return 'The playback history doesn\'t reach back to $time.';
+  }
+
+  @override
+  String get sleepSpotJump => 'Jump here';
+
+  @override
+  String get sleepSpotShowText => 'Show text';
+
+  @override
+  String sleepSpotTextTitle(String time) {
+    return 'What was playing around $time';
+  }
+
+  @override
+  String get sleepSpotTextHint =>
+      'Tap the last line you remember to carry on from there.';
+
+  @override
+  String get sleepSpotNoText => 'There\'s no transcript of this part yet.';
+
+  @override
+  String get sleepSpotTranscribe => 'Transcribe this part';
+
+  @override
+  String sleepSpotTranscribing(String done, String total) {
+    return 'Transcribing $done of $total...';
+  }
+
+  @override
+  String get sleepSpotEarlier => 'Earlier';
+
+  @override
+  String get sleepSpotLater => 'Later';
+
+  @override
+  String get sleepSpotNeedsActive =>
+      'Start playing this book first, then jump.';
+
+  @override
+  String get sleepSpotNoPodcastText =>
+      'Reading back the text works for audiobooks only.';
 }
