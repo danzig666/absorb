@@ -3,7 +3,7 @@ name: Test APK
 # Builds an installable APK of a work branch for trying changes on a phone.
 # Uses the dev flavor, so it installs beside the Play Store / GitHub app
 # ("Absorb Dev") instead of replacing it. The APK is attached to the run as an
-# artifact.
+# artifact and published as a pre-release tagged dev-<version>-<commit>.
 #
 # Signing: uses ANDROID_KEYSTORE_BASE64 & co. when the repo has them. Without
 # them a throwaway key is generated once and kept in the Actions cache, so
@@ -21,8 +21,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
+    # Allow GITHUB_TOKEN to create the pre-release.
+    permissions:
+      contents: write
+
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-java@v5
         with:
@@ -91,9 +97,35 @@ jobs:
           mkdir -p out
           cp "$SRC" "out/$NAME.apk"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "tag=dev-${RAW//+/-}-$SHA" >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.apk.outputs.name }}
           path: out/*.apk
           retention-days: 30
+
+      - name: Publish pre-release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.apk.outputs.tag }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          {
+            echo "Test build of \`$BRANCH\` at $(git rev-parse --short HEAD)."
+            echo
+            echo "Installs as **Absorb Dev**, beside the regular app."
+            echo
+            echo "## Changes"
+            BASE=$(git merge-base HEAD "origin/${{ github.event.repository.default_branch }}" || true)
+            if [ -n "$BASE" ]; then
+              git log --format='- %s' "$BASE..HEAD"
+            else
+              git log -1 --format='- %s'
+            fi
+          } > notes.md
+          gh release create "$TAG" out/*.apk \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --title "Absorb Dev $TAG" \
+            --notes-file notes.md
