@@ -19356,7 +19356,7 @@ abstract class AppLocalizations {
   /// No description provided for @transcriptionModelParakeetDesc.
   ///
   /// In en, this message translates to:
-  /// **'25 European languages, with punctuation. About 400 MB.'**
+  /// **'25 European languages, with punctuation. About 260 MB.'**
   String get transcriptionModelParakeetDesc;
 }
 

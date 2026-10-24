@@ -29,16 +29,18 @@ class ParakeetEngine {
   ParakeetEngine._();
   static final ParakeetEngine instance = ParakeetEngine._();
 
-  // The sherpa-onnx packaging of moondream/parakeet-redux, one file at a time
-  // so a broken download only costs that file. Sizes double as the
-  // "complete" check.
+  // The sherpa-onnx packaging of moondream/parakeet-redux with its encoder
+  // swapped for the 2-bit export (same ternary weights, 190 MB instead of
+  // 344, and faster), built and published by the Parakeet model workflow.
+  // One file at a time so a broken download only costs that file. Sizes
+  // double as the "complete" check.
   static const _baseUrl =
-      'https://huggingface.co/cohearo/sherpa-onnx-nemo-parakeet-redux/resolve/main/';
+      'https://github.com/danzig666/absorb/releases/download/model-parakeet-redux-w2a8-v1/';
   static const _files = <(String, int)>[
     ('tokens.txt', 93939),
     ('joiner.onnx', 25285351),
     ('decoder.onnx', 47249584),
-    ('encoder.onnx', 343842409),
+    ('encoder.onnx', 189893504),
   ];
   static int get approxBytes => _files.fold(0, (n, f) => n + f.$2);
 
@@ -54,7 +56,16 @@ class ParakeetEngine {
     final override = debugModelDir;
     if (override != null) return Directory(override);
     final base = await getApplicationSupportDirectory();
-    return Directory('${base.path}${Platform.pathSeparator}parakeet-redux');
+    return Directory('${base.path}${Platform.pathSeparator}parakeet-redux-w2');
+  }
+
+  /// Where the first test builds kept the larger 4-bit model.
+  Future<void> _dropOldModel() async {
+    try {
+      final base = await getApplicationSupportDirectory();
+      final old = Directory('${base.path}${Platform.pathSeparator}parakeet-redux');
+      if (old.existsSync()) await old.delete(recursive: true);
+    } catch (_) {}
   }
 
   Future<bool> isDownloaded() async {
@@ -70,6 +81,7 @@ class ParakeetEngine {
   /// so a retry after a dropped connection carries on where it stopped.
   Future<void> download({void Function(double progress)? onProgress}) async {
     _cancelDownload = false;
+    await _dropOldModel();
     final dir = await _dir();
     await dir.create(recursive: true);
     final total = approxBytes;
@@ -124,6 +136,7 @@ class ParakeetEngine {
 
   Future<void> delete() async {
     await unload();
+    await _dropOldModel();
     final dir = await _dir();
     if (dir.existsSync()) await dir.delete(recursive: true);
   }

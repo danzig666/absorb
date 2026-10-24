@@ -1,0 +1,93 @@
+name: Parakeet model
+
+# Publishes the Parakeet Redux files the app downloads for its Parakeet
+# transcription engine, as assets of a fixed release.
+#
+# The encoder is Olicorne's 2-bit export of moondream/parakeet-redux
+# (MatMulNBits bits=2, lossless for the ternary weights, ~190 MB instead of the
+# 344 MB 4-bit one) with the sherpa-onnx metadata of the Codyfederer/cohearo
+# packaging added, so sherpa-onnx loads it as a nemo_transducer. Decoder,
+# joiner and tokens are that packaging's, unchanged. All CC-BY-4.0.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "claude/**"
+    paths:
+      - ".github/workflows/parakeet-model.yml"
+
+env:
+  TAG: model-parakeet-redux-w2a8-v1
+  OLICORNE: https://huggingface.co/Olicorne/parakeet-tdt-0.6b-v3-redux-onnx/resolve/main
+  COHEARO: https://huggingface.co/cohearo/sherpa-onnx-nemo-parakeet-redux/resolve/main
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Skip when already published
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.check.outputs.exists != 'true'
+        with:
+          python-version: "3.12"
+
+      - name: Build the files
+        if: steps.check.outputs.exists != 'true'
+        run: |
+          set -e
+          pip install onnx==1.23.2
+          mkdir -p src out
+          curl -sSfL -o src/encoder-w2a8.onnx "$OLICORNE/w2a8/encoder-model.w2a8.onnx"
+          curl -sSfL -o src/encoder-4bit.onnx "$COHEARO/encoder.onnx"
+          for f in decoder.onnx joiner.onnx tokens.txt; do
+            curl -sSfL -o "out/$f" "$COHEARO/$f"
+          done
+          python - <<'EOF'
+          import onnx
+          meta = onnx.load('src/encoder-4bit.onnx', load_external_data=False).metadata_props
+          m = onnx.load('src/encoder-w2a8.onnx')
+          assert [i.name for i in m.graph.input] == ['audio_signal', 'length']
+          assert [o.name for o in m.graph.output] == ['outputs', 'encoded_lengths']
+          del m.metadata_props[:]
+          for p in meta:
+              value = p.value
+              if p.key == 'comment':
+                  value = ('Ternary encoder as ONNX Runtime MatMulNBits 2-bit, activations int8 '
+                           '(w2a8 export by Olicorne); sherpa-onnx metadata from Codyfederer/cohearo')
+              m.metadata_props.add(key=p.key, value=value)
+          onnx.save(m, 'out/encoder.onnx')
+          EOF
+          ls -l out
+          sha256sum out/*
+
+      - name: Publish
+        if: steps.check.outputs.exists != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cat > notes.md <<'EOF'
+          Model files for Absorb's Parakeet transcription engine. Not an app release.
+
+          - `encoder.onnx`: 2-bit (w2a8) ONNX export of [moondream/parakeet-redux](https://huggingface.co/moondream/parakeet-redux) by [Olicorne](https://huggingface.co/Olicorne/parakeet-tdt-0.6b-v3-redux-onnx), with sherpa-onnx metadata added
+          - `decoder.onnx`, `joiner.onnx`, `tokens.txt`: unchanged from [cohearo/sherpa-onnx-nemo-parakeet-redux](https://huggingface.co/cohearo/sherpa-onnx-nemo-parakeet-redux) ([Codyfederer](https://huggingface.co/Codyfederer/sherpa-onnx-nemo-parakeet-redux)'s packaging)
+
+          Original model: NVIDIA [parakeet-tdt-0.6b-v3](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3). Ternary weights: Moondream / M87 Labs. ONNX export: eschmidbauer, Olicorne. License: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), inherited from all of the above; none of them endorse this build.
+          EOF
+          gh release create "$TAG" out/encoder.onnx out/decoder.onnx out/joiner.onnx out/tokens.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --title "Parakeet Redux model (2-bit encoder)" \
+            --notes-file notes.md

@@ -11141,5 +11141,5 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get transcriptionModelParakeetDesc =>
-      '25 European languages, with punctuation. About 400 MB.';
+      '25 European languages, with punctuation. About 260 MB.';
 }

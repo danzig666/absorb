@@ -6129,5 +6129,5 @@
   "transcriptionEngineHint": "Parakeet (NVIDIA Parakeet TDT v3 in Moondream's 1.58-bit Redux form) is far more accurate than Whisper outside English and writes punctuation, in 25 European languages. It needs about 1 GB of free memory while it works.",
   "transcriptionParakeetNeedsModel": "Download the Parakeet model below to use it.",
   "transcriptionModelParakeet": "Parakeet Redux",
-  "transcriptionModelParakeetDesc": "25 European languages, with punctuation. About 400 MB."
+  "transcriptionModelParakeetDesc": "25 European languages, with punctuation. About 260 MB."
 }
