@@ -19209,23 +19209,11 @@ abstract class AppLocalizations {
   /// **'Find your spot from the last thing you did while awake, from the clock, or from the words you remember.'**
   String get sleepSpotIntro;
 
-  /// No description provided for @sleepSpotLastAwake.
-  ///
-  /// In en, this message translates to:
-  /// **'Last sign you were awake'**
-  String get sleepSpotLastAwake;
-
   /// No description provided for @sleepSpotNoAwake.
   ///
   /// In en, this message translates to:
   /// **'Nothing recorded yet. Starting the sleep timer, shaking to extend it or snoozing it from your headphones marks that you were still awake.'**
   String get sleepSpotNoAwake;
-
-  /// No description provided for @sleepSpotTimerPaused.
-  ///
-  /// In en, this message translates to:
-  /// **'Sleep timer paused at {time}'**
-  String sleepSpotTimerPaused(String time);
 
   /// No description provided for @sleepSpotClockTitle.
   ///
@@ -19448,6 +19436,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Transcription stopped after repeated errors.'**
   String get bookTranscribeFailedNotif;
+
+  /// No description provided for @sleepSpotSessionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent listening'**
+  String get sleepSpotSessionsTitle;
+
+  /// No description provided for @sleepSpotSessionsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the stretch you fell asleep in. Short plays after a long silence are marked as likely accidental.'**
+  String get sleepSpotSessionsHint;
+
+  /// No description provided for @sleepSpotSessionAwake.
+  ///
+  /// In en, this message translates to:
+  /// **'Last awake {time} at {position}'**
+  String sleepSpotSessionAwake(String time, String position);
+
+  /// No description provided for @sleepSpotSessionNoAwake.
+  ///
+  /// In en, this message translates to:
+  /// **'Started at {position}'**
+  String sleepSpotSessionNoAwake(String position);
+
+  /// No description provided for @sleepSpotSessionTimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep timer stopped it at {position}'**
+  String sleepSpotSessionTimer(String position);
+
+  /// No description provided for @sleepSpotSessionPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused at {position}'**
+  String sleepSpotSessionPaused(String position);
+
+  /// No description provided for @sleepSpotSessionOngoing.
+  ///
+  /// In en, this message translates to:
+  /// **'Still playing'**
+  String get sleepSpotSessionOngoing;
+
+  /// No description provided for @sleepSpotSessionAccidental.
+  ///
+  /// In en, this message translates to:
+  /// **'Short play after a long silence, probably by accident'**
+  String get sleepSpotSessionAccidental;
+
+  /// No description provided for @sleepSpotSessionFromButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Started from the headphones'**
+  String get sleepSpotSessionFromButton;
+
+  /// No description provided for @sleepSpotJumpToStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Where it stopped'**
+  String get sleepSpotJumpToStop;
+
+  /// No description provided for @sleepSpotShowEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'Show earlier'**
+  String get sleepSpotShowEarlier;
 }
 
 class _AppLocalizationsDelegate

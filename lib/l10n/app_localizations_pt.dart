@@ -11144,16 +11144,8 @@ class AppLocalizationsPt extends AppLocalizations {
       'Find your spot from the last thing you did while awake, from the clock, or from the words you remember.';
 
   @override
-  String get sleepSpotLastAwake => 'Last sign you were awake';
-
-  @override
   String get sleepSpotNoAwake =>
       'Nothing recorded yet. Starting the sleep timer, shaking to extend it or snoozing it from your headphones marks that you were still awake.';
-
-  @override
-  String sleepSpotTimerPaused(String time) {
-    return 'Sleep timer paused at $time';
-  }
 
   @override
   String get sleepSpotClockTitle => 'Jump to a clock time';
@@ -11291,4 +11283,47 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get bookTranscribeFailedNotif =>
       'Transcription stopped after repeated errors.';
+
+  @override
+  String get sleepSpotSessionsTitle => 'Recent listening';
+
+  @override
+  String get sleepSpotSessionsHint =>
+      'Pick the stretch you fell asleep in. Short plays after a long silence are marked as likely accidental.';
+
+  @override
+  String sleepSpotSessionAwake(String time, String position) {
+    return 'Last awake $time at $position';
+  }
+
+  @override
+  String sleepSpotSessionNoAwake(String position) {
+    return 'Started at $position';
+  }
+
+  @override
+  String sleepSpotSessionTimer(String position) {
+    return 'Sleep timer stopped it at $position';
+  }
+
+  @override
+  String sleepSpotSessionPaused(String position) {
+    return 'Paused at $position';
+  }
+
+  @override
+  String get sleepSpotSessionOngoing => 'Still playing';
+
+  @override
+  String get sleepSpotSessionAccidental =>
+      'Short play after a long silence, probably by accident';
+
+  @override
+  String get sleepSpotSessionFromButton => 'Started from the headphones';
+
+  @override
+  String get sleepSpotJumpToStop => 'Where it stopped';
+
+  @override
+  String get sleepSpotShowEarlier => 'Show earlier';
 }

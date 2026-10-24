@@ -6064,16 +6064,7 @@
   "sleepSpotButton": "Fell asleep?",
   "sleepSpotTitle": "Where did I fall asleep?",
   "sleepSpotIntro": "Find your spot from the last thing you did while awake, from the clock, or from the words you remember.",
-  "sleepSpotLastAwake": "Last sign you were awake",
   "sleepSpotNoAwake": "Nothing recorded yet. Starting the sleep timer, shaking to extend it or snoozing it from your headphones marks that you were still awake.",
-  "sleepSpotTimerPaused": "Sleep timer paused at {time}",
-  "@sleepSpotTimerPaused": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
   "sleepSpotClockTitle": "Jump to a clock time",
   "sleepSpotPickTime": "Pick a time",
   "sleepSpotAtTime": "At {time} the book was at {position}",
@@ -6182,5 +6173,47 @@
     }
   },
   "bookTranscribeBatteryNotif": "Stopped: battery low. Plug in to carry on.",
-  "bookTranscribeFailedNotif": "Transcription stopped after repeated errors."
+  "bookTranscribeFailedNotif": "Transcription stopped after repeated errors.",
+  "sleepSpotSessionsTitle": "Recent listening",
+  "sleepSpotSessionsHint": "Pick the stretch you fell asleep in. Short plays after a long silence are marked as likely accidental.",
+  "sleepSpotSessionAwake": "Last awake {time} at {position}",
+  "@sleepSpotSessionAwake": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "position": {
+        "type": "String"
+      }
+    }
+  },
+  "sleepSpotSessionNoAwake": "Started at {position}",
+  "@sleepSpotSessionNoAwake": {
+    "placeholders": {
+      "position": {
+        "type": "String"
+      }
+    }
+  },
+  "sleepSpotSessionTimer": "Sleep timer stopped it at {position}",
+  "@sleepSpotSessionTimer": {
+    "placeholders": {
+      "position": {
+        "type": "String"
+      }
+    }
+  },
+  "sleepSpotSessionPaused": "Paused at {position}",
+  "@sleepSpotSessionPaused": {
+    "placeholders": {
+      "position": {
+        "type": "String"
+      }
+    }
+  },
+  "sleepSpotSessionOngoing": "Still playing",
+  "sleepSpotSessionAccidental": "Short play after a long silence, probably by accident",
+  "sleepSpotSessionFromButton": "Started from the headphones",
+  "sleepSpotJumpToStop": "Where it stopped",
+  "sleepSpotShowEarlier": "Show earlier"
 }

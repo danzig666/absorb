@@ -154,8 +154,12 @@ class PlaybackHistoryService {
   factory PlaybackHistoryService() => _instance;
   PlaybackHistoryService._();
 
-  static const int _maxEventsPerBook = 1000;
+  static const int _maxEventsPerBook = 2000;
   static const _syncKeepEvery = Duration(minutes: 5);
+
+  // Each log is a read-modify-write of the stored list; two at once (the
+  // sleep timer's entry and its pause) would drop one. Run them in turn.
+  Future<void> _queue = Future.value();
 
   /// Log an event for a book.
   Future<void> log({
@@ -163,11 +167,24 @@ class PlaybackHistoryService {
     required PlaybackEventType type,
     required double positionSeconds,
     String? detail,
-  }) async {
+  }) {
+    final at = DateTime.now();
+    final next = _queue.then((_) => _log(itemId, type, positionSeconds, detail, at));
+    _queue = next.catchError((_) {});
+    return next;
+  }
+
+  Future<void> _log(
+    String itemId,
+    PlaybackEventType type,
+    double positionSeconds,
+    String? detail,
+    DateTime at,
+  ) async {
     final event = PlaybackEvent(
       type: type,
       positionSeconds: positionSeconds,
-      timestamp: DateTime.now(),
+      timestamp: at,
       detail: detail,
     );
 

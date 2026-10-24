@@ -9,6 +9,42 @@ class SleepSpot {
   const SleepSpot(this.at, this.positionSeconds, {this.event});
 }
 
+/// One stretch of listening: from pressing play to whatever stopped it.
+class ListeningSession {
+  final DateTime start;
+  final DateTime end;
+  final double startPosition;
+  final double endPosition;
+  /// What ended it (sleep timer, pause...), or null while it is still going
+  /// or the history stops mid-way.
+  final PlaybackEvent? endEvent;
+  /// The last thing only an awake listener does inside it.
+  final SleepSpot? lastAwake;
+  /// Started by a headphone or other media button press.
+  final bool fromMediaButton;
+  /// Short and after a long silence: most likely a button pressed in the
+  /// night, not real listening.
+  final bool likelyAccidental;
+
+  const ListeningSession({
+    required this.start,
+    required this.end,
+    required this.startPosition,
+    required this.endPosition,
+    required this.endEvent,
+    required this.lastAwake,
+    required this.fromMediaButton,
+    required this.likelyAccidental,
+  });
+
+  Duration get length => end.difference(start);
+  bool get endedBySleepTimer => endEvent?.type == PlaybackEventType.sleepTimer;
+
+  /// Where to go back to for this session: just after the last awake sign,
+  /// or failing that where it started.
+  SleepSpot get spot => lastAwake ?? SleepSpot(start, startPosition);
+}
+
 /// One stretch of the timeline between two history entries. While playing
 /// the position moves linearly from [p0] to [p1]; while paused they match.
 class _Segment {
@@ -50,8 +86,17 @@ class SleepSpotFinder {
     bool livePlaying = false,
     DateTime? now,
   }) {
-    final events = [...history]
-      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    // Stable by time: entries logged in the same millisecond (the sleep
+    // timer's own entry and the pause it causes) keep their order.
+    final indexed = [for (var i = 0; i < history.length; i++) (i, history[i])];
+    final newestFirst = history.length > 1 &&
+        history.first.timestamp.isAfter(history.last.timestamp);
+    indexed.sort((a, b) {
+      final c = a.$2.timestamp.compareTo(b.$2.timestamp);
+      if (c != 0) return c;
+      return newestFirst ? b.$1.compareTo(a.$1) : a.$1.compareTo(b.$1);
+    });
+    final events = [for (final e in indexed) e.$2];
     return SleepSpotFinder._(
       events,
       _buildSegments(events, speed, livePosition, livePlaying, now ?? DateTime.now()),
@@ -211,6 +256,101 @@ class SleepSpotFinder {
       default:
         return false;
     }
+  }
+
+  // A session shorter than this, after at least [_accidentGap] of silence,
+  // reads as a button pressed by accident.
+  static const _accidentLength = Duration(minutes: 5);
+  static const _accidentGap = Duration(minutes: 30);
+
+  /// Listening sessions, newest first, going back [within].
+  List<ListeningSession> sessions({
+    Duration within = const Duration(days: 7),
+    DateTime? now,
+  }) {
+    final cutoff = (now ?? DateTime.now()).subtract(within);
+    final out = <ListeningSession>[];
+    DateTime? start;
+    double startPos = 0;
+    PlaybackEvent? awake;
+    // Awake signs after the press that started the session.
+    var laterSigns = 0;
+    var fromButton = false;
+    DateTime? lastButton;
+    DateTime? prevEnd;
+    var playing = false;
+
+    void close(DateTime end, double endPos, PlaybackEvent? endEvent) {
+      final s = start;
+      if (s == null) return;
+      final gap = prevEnd == null ? null : s.difference(prevEnd!);
+      final length = end.difference(s);
+      // After a long silence, either too short to be real listening, or
+      // started from the headphones and never touched again (an automatic
+      // sleep timer can keep such a press playing for half an hour).
+      final afterSilence = gap == null || gap > _accidentGap;
+      final accidental = afterSilence &&
+          (length < _accidentLength || (fromButton && laterSigns == 0));
+      SleepSpot? spot;
+      final a = awake;
+      if (a != null) {
+        final at = a.timestamp.add(const Duration(seconds: 1));
+        spot = SleepSpot(a.timestamp, positionAt(at) ?? a.positionSeconds, event: a);
+      }
+      if (!s.isBefore(cutoff)) {
+        out.add(ListeningSession(
+          start: s,
+          end: end,
+          startPosition: startPos,
+          endPosition: endPos,
+          endEvent: endEvent,
+          lastAwake: spot,
+          fromMediaButton: fromButton,
+          likelyAccidental: accidental,
+        ));
+      }
+      prevEnd = end;
+      start = null;
+      awake = null;
+      laterSigns = 0;
+    }
+
+    for (final e in events) {
+      if (e.type == PlaybackEventType.clickDebounce &&
+          !(e.detail ?? '').contains('suppressed')) {
+        lastButton = e.timestamp;
+      }
+      if (e.type == PlaybackEventType.play && !playing) {
+        playing = true;
+        start = e.timestamp;
+        startPos = e.positionSeconds;
+        fromButton = lastButton != null &&
+            e.timestamp.difference(lastButton).inSeconds.abs() <= 3;
+      }
+      if (playing && _isAwakeSignal(e)) {
+        if (awake != null) laterSigns++;
+        awake = e;
+      }
+      if (playing && _stops(e)) {
+        playing = false;
+        close(e.timestamp, e.positionSeconds, e);
+      }
+    }
+    if (playing) {
+      final end = coveredUntil ?? events.last.timestamp;
+      close(end, positionAt(end) ?? events.last.positionSeconds, null);
+    }
+    return out.reversed.toList();
+  }
+
+  /// The session to offer first: the newest one that looks like real
+  /// listening, else simply the newest.
+  ListeningSession? likelySleepSession({DateTime? now}) {
+    final all = sessions(now: now);
+    for (final s in all) {
+      if (!s.likelyAccidental) return s;
+    }
+    return all.isEmpty ? null : all.first;
   }
 
   /// The latest time the sleep timer paused playback, or failing that the

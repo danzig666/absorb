@@ -77,9 +77,13 @@ class _SleepSpotBodyState extends State<_SleepSpotBody> {
   static const _textStep = 180.0;
   static const _window = 30.0;
 
+  // Sessions listed before "Show earlier".
+  static const _sessionsShown = 4;
+
   SleepSpotFinder? _finder;
-  SleepSpot? _awake;
-  PlaybackEvent? _sleep;
+  List<ListeningSession> _sessions = const [];
+  ListeningSession? _selected;
+  bool _showAllSessions = false;
   SleepSpot? _clockSpot;
   TimeOfDay? _pickedTime;
   bool _pickedTimeMissing = false;
@@ -133,12 +137,16 @@ class _SleepSpotBodyState extends State<_SleepSpotBody> {
       _finder = finder;
       _speed = speed;
       _speedAdjusted = adjusted;
-      _awake = finder.lastAwake();
-      _sleep = finder.lastSleep;
+      _sessions = finder.sessions();
+      _selected = finder.likelySleepSession();
     });
-    final start = _awake ??
-        (_sleep != null ? SleepSpot(_sleep!.timestamp, _sleep!.positionSeconds) : null);
+    final start = _selected?.spot;
     if (start != null) await _showTextFor(start);
+  }
+
+  Future<void> _select(ListeningSession s) async {
+    setState(() => _selected = s);
+    await _showTextFor(s.spot);
   }
 
   String _clock(DateTime t) {
@@ -163,7 +171,7 @@ class _SleepSpotBodyState extends State<_SleepSpotBody> {
 
   Future<void> _pickTime() async {
     final initial = _pickedTime ??
-        TimeOfDay.fromDateTime(_awake?.at ?? _sleep?.timestamp ?? DateTime.now());
+        TimeOfDay.fromDateTime(_selected?.spot.at ?? DateTime.now());
     final picked = await showTimePicker(context: context, initialTime: initial);
     if (picked == null || !mounted) return;
     final spot = _finder?.spotAtClockTime(picked.hour, picked.minute);
@@ -317,7 +325,7 @@ class _SleepSpotBodyState extends State<_SleepSpotBody> {
                     textAlign: TextAlign.center,
                     style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
                 const SizedBox(height: 16),
-                _awakeCard(l, cs, tt),
+                _sessionsCard(l, cs, tt),
                 const SizedBox(height: 12),
                 _clockCard(l, cs, tt),
                 const SizedBox(height: 20),
@@ -346,48 +354,102 @@ class _SleepSpotBodyState extends State<_SleepSpotBody> {
         ),
       ]);
 
-  Widget _spotActions(AppLocalizations l, SleepSpot spot) => Padding(
-        padding: const EdgeInsets.only(top: 10),
-        child: Wrap(spacing: 8, runSpacing: 8, children: [
-          FilledButton.icon(
-            onPressed: () => _jump(spot.positionSeconds),
-            icon: const Icon(Icons.my_location_rounded, size: 18),
-            label: Text(l.sleepSpotJump),
-            style: FilledButton.styleFrom(backgroundColor: widget.accent),
-          ),
-          OutlinedButton.icon(
-            onPressed: () => _showTextFor(spot),
-            icon: const Icon(Icons.subtitles_rounded, size: 18),
-            label: Text(l.sleepSpotShowText),
+  Widget _sessionsCard(AppLocalizations l, ColorScheme cs, TextTheme tt) {
+    final shown = _showAllSessions
+        ? _sessions
+        : _sessions.take(_sessionsShown).toList();
+    final selected = _selected;
+    return _card(cs, [
+      _cardTitle(Icons.history_rounded, l.sleepSpotSessionsTitle, tt),
+      const SizedBox(height: 4),
+      Text(_sessions.isEmpty ? l.sleepSpotNoAwake : l.sleepSpotSessionsHint,
+          style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+      const SizedBox(height: 6),
+      for (final s in shown) _sessionTile(l, cs, tt, s, identical(s, selected)),
+      if (!_showAllSessions && _sessions.length > _sessionsShown)
+        TextButton.icon(
+          onPressed: () => setState(() => _showAllSessions = true),
+          icon: const Icon(Icons.expand_more_rounded),
+          label: Text(l.sleepSpotShowEarlier),
+        ),
+      if (selected != null)
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Wrap(spacing: 8, runSpacing: 8, children: [
+            FilledButton.icon(
+              onPressed: () => _jump(selected.spot.positionSeconds),
+              icon: const Icon(Icons.my_location_rounded, size: 18),
+              label: Text(l.sleepSpotJump),
+              style: FilledButton.styleFrom(backgroundColor: widget.accent),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => _jump(selected.endPosition),
+              icon: const Icon(Icons.stop_circle_outlined, size: 18),
+              label: Text(l.sleepSpotJumpToStop),
+            ),
+          ]),
+        ),
+    ]);
+  }
+
+  Widget _sessionTile(AppLocalizations l, ColorScheme cs, TextTheme tt,
+      ListeningSession s, bool selected) {
+    final small = tt.bodySmall?.copyWith(color: cs.onSurfaceVariant);
+    final awake = s.lastAwake;
+    final IconData icon;
+    final String ended;
+    if (s.endEvent == null) {
+      icon = Icons.play_arrow_rounded;
+      ended = l.sleepSpotSessionOngoing;
+    } else if (s.endedBySleepTimer) {
+      icon = Icons.bedtime_rounded;
+      ended = l.sleepSpotSessionTimer(_pos(s.endPosition));
+    } else {
+      icon = Icons.pause_rounded;
+      ended = l.sleepSpotSessionPaused(_pos(s.endPosition));
+    }
+    final length = s.length.inSeconds / 1.0;
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => _select(s),
+      child: Container(
+        margin: const EdgeInsets.only(top: 4),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: selected ? widget.accent.withValues(alpha: 0.14) : null,
+          border: Border.all(
+              color: selected
+                  ? widget.accent.withValues(alpha: 0.6)
+                  : cs.outlineVariant.withValues(alpha: 0.5)),
+        ),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(s.likelyAccidental ? Icons.touch_app_rounded : icon,
+              size: 20,
+              color: s.likelyAccidental ? cs.error : widget.accent),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(
+                  '${dateLabel(s.start, l)} ${_clock(s.start)}–${_clock(s.end)} · ${fmtDur(length)}',
+                  style: tt.bodyMedium?.copyWith(
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500)),
+              Text(
+                  awake != null
+                      ? l.sleepSpotSessionAwake(_clock(awake.at), _pos(awake.positionSeconds))
+                      : l.sleepSpotSessionNoAwake(_pos(s.startPosition)),
+                  style: small),
+              Text(ended, style: small),
+              if (s.likelyAccidental)
+                Text(l.sleepSpotSessionAccidental,
+                    style: tt.bodySmall?.copyWith(color: cs.error))
+              else if (s.fromMediaButton)
+                Text(l.sleepSpotSessionFromButton, style: small),
+            ]),
           ),
         ]),
-      );
-
-  Widget _awakeCard(AppLocalizations l, ColorScheme cs, TextTheme tt) {
-    final awake = _awake;
-    final sleep = _sleep;
-    return _card(cs, [
-      _cardTitle(Icons.waving_hand_rounded, l.sleepSpotLastAwake, tt),
-      const SizedBox(height: 8),
-      if (awake == null)
-        Text(l.sleepSpotNoAwake,
-            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant))
-      else ...[
-        Text('${_clock(awake.at)} · ${_pos(awake.positionSeconds)}',
-            style: tt.headlineSmall?.copyWith(
-                color: widget.accent, fontWeight: FontWeight.w600)),
-        if (awake.event != null)
-          Text(awake.event!.label,
-              style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
-      ],
-      if (sleep != null && sleep.type == PlaybackEventType.sleepTimer)
-        Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Text(l.sleepSpotTimerPaused(_clock(sleep.timestamp)),
-              style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
-        ),
-      if (awake != null) _spotActions(l, awake),
-    ]);
+      ),
+    );
   }
 
   Widget _clockCard(AppLocalizations l, ColorScheme cs, TextTheme tt) {
