@@ -223,6 +223,19 @@ class MainActivity : AudioServiceActivity() {
                             }.start()
                         }
                     }
+                    // Whole-book transcription runs for an hour or more with
+                    // the screen off; without this the CPU sleeps under it.
+                    "cpuWakeLock" -> {
+                        setTranscribeWakeLock(call.argument<Boolean>("on") == true)
+                        result.success(true)
+                    }
+                    "batteryStatus" -> {
+                        val bm = getSystemService(Context.BATTERY_SERVICE) as android.os.BatteryManager
+                        result.success(mapOf(
+                            "level" to bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY),
+                            "charging" to bm.isCharging,
+                        ))
+                    }
                     else -> result.notImplemented()
                 }
             }
@@ -240,6 +253,25 @@ class MainActivity : AudioServiceActivity() {
         // GMS-backed channels (cast foreground service, wear bridges).
         // Resolves to the real impl in github/playstore, no-op in fdroid.
         PlatformIntegration.registerChannels(this, flutterEngine)
+    }
+
+    private var transcribeWakeLock: android.os.PowerManager.WakeLock? = null
+
+    private fun setTranscribeWakeLock(on: Boolean) {
+        if (on) {
+            if (transcribeWakeLock?.isHeld == true) return
+            val pm = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+            transcribeWakeLock = pm.newWakeLock(
+                android.os.PowerManager.PARTIAL_WAKE_LOCK, "absorb:transcribe-book"
+            ).apply {
+                setReferenceCounted(false)
+                // Safety net: let go on its own if Dart never says stop.
+                acquire(6 * 60 * 60 * 1000L)
+            }
+        } else {
+            transcribeWakeLock?.let { if (it.isHeld) it.release() }
+            transcribeWakeLock = null
+        }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {

@@ -6129,5 +6129,58 @@
   "transcriptionEngineHint": "Parakeet (NVIDIA Parakeet TDT v3 in Moondream's 1.58-bit Redux form) is far more accurate than Whisper outside English and writes punctuation, in 25 European languages. It needs about 1 GB of free memory while it works.",
   "transcriptionParakeetNeedsModel": "Download the Parakeet model below to use it.",
   "transcriptionModelParakeet": "Parakeet Redux",
-  "transcriptionModelParakeetDesc": "25 European languages, with punctuation. About 260 MB."
+  "transcriptionModelParakeetDesc": "25 European languages, with punctuation. About 260 MB.",
+  "bookTranscribeButton": "Transcribe whole book",
+  "bookTranscribeTitle": "Transcribe the whole book",
+  "bookTranscribeHint": "Runs on this phone with {engine}, in the background with a notification. It takes a while and works the processor hard, so it is best left overnight on the charger. Stop any time; it carries on where it left off. The text then shows up in the live transcript, read along and Where did I fall asleep?",
+  "@bookTranscribeHint": {
+    "placeholders": {
+      "engine": {
+        "type": "String"
+      }
+    }
+  },
+  "bookTranscribeStart": "Start",
+  "bookTranscribeContinue": "Continue",
+  "bookTranscribeStop": "Stop",
+  "bookTranscribeWarmingUp": "Getting started...",
+  "bookTranscribeSpeed": "{speed}x realtime · about {left} left",
+  "@bookTranscribeSpeed": {
+    "placeholders": {
+      "speed": {
+        "type": "String"
+      },
+      "left": {
+        "type": "String"
+      }
+    }
+  },
+  "bookTranscribeDone": "The whole book is transcribed.",
+  "bookTranscribeOtherRunning": "Already transcribing {title}.",
+  "@bookTranscribeOtherRunning": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "bookTranscribeChannel": "Book transcription",
+  "bookTranscribeNotifTitle": "Transcribing {title}",
+  "@bookTranscribeNotifTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "bookTranscribeDoneNotif": "Finished transcribing {title}",
+  "@bookTranscribeDoneNotif": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "bookTranscribeBatteryNotif": "Stopped: battery low. Plug in to carry on.",
+  "bookTranscribeFailedNotif": "Transcription stopped after repeated errors."
 }

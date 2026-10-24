@@ -19358,6 +19358,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'25 European languages, with punctuation. About 260 MB.'**
   String get transcriptionModelParakeetDesc;
+
+  /// No description provided for @bookTranscribeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribe whole book'**
+  String get bookTranscribeButton;
+
+  /// No description provided for @bookTranscribeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribe the whole book'**
+  String get bookTranscribeTitle;
+
+  /// No description provided for @bookTranscribeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs on this phone with {engine}, in the background with a notification. It takes a while and works the processor hard, so it is best left overnight on the charger. Stop any time; it carries on where it left off. The text then shows up in the live transcript, read along and Where did I fall asleep?'**
+  String bookTranscribeHint(String engine);
+
+  /// No description provided for @bookTranscribeStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get bookTranscribeStart;
+
+  /// No description provided for @bookTranscribeContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get bookTranscribeContinue;
+
+  /// No description provided for @bookTranscribeStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get bookTranscribeStop;
+
+  /// No description provided for @bookTranscribeWarmingUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Getting started...'**
+  String get bookTranscribeWarmingUp;
+
+  /// No description provided for @bookTranscribeSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'{speed}x realtime · about {left} left'**
+  String bookTranscribeSpeed(String speed, String left);
+
+  /// No description provided for @bookTranscribeDone.
+  ///
+  /// In en, this message translates to:
+  /// **'The whole book is transcribed.'**
+  String get bookTranscribeDone;
+
+  /// No description provided for @bookTranscribeOtherRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Already transcribing {title}.'**
+  String bookTranscribeOtherRunning(String title);
+
+  /// No description provided for @bookTranscribeChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'Book transcription'**
+  String get bookTranscribeChannel;
+
+  /// No description provided for @bookTranscribeNotifTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing {title}'**
+  String bookTranscribeNotifTitle(String title);
+
+  /// No description provided for @bookTranscribeDoneNotif.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished transcribing {title}'**
+  String bookTranscribeDoneNotif(String title);
+
+  /// No description provided for @bookTranscribeBatteryNotif.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped: battery low. Plug in to carry on.'**
+  String get bookTranscribeBatteryNotif;
+
+  /// No description provided for @bookTranscribeFailedNotif.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription stopped after repeated errors.'**
+  String get bookTranscribeFailedNotif;
 }
 
 class _AppLocalizationsDelegate

@@ -11234,4 +11234,61 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get transcriptionModelParakeetDesc =>
       '25 European languages, with punctuation. About 260 MB.';
+
+  @override
+  String get bookTranscribeButton => 'Transcribe whole book';
+
+  @override
+  String get bookTranscribeTitle => 'Transcribe the whole book';
+
+  @override
+  String bookTranscribeHint(String engine) {
+    return 'Runs on this phone with $engine, in the background with a notification. It takes a while and works the processor hard, so it is best left overnight on the charger. Stop any time; it carries on where it left off. The text then shows up in the live transcript, read along and Where did I fall asleep?';
+  }
+
+  @override
+  String get bookTranscribeStart => 'Start';
+
+  @override
+  String get bookTranscribeContinue => 'Continue';
+
+  @override
+  String get bookTranscribeStop => 'Stop';
+
+  @override
+  String get bookTranscribeWarmingUp => 'Getting started...';
+
+  @override
+  String bookTranscribeSpeed(String speed, String left) {
+    return '${speed}x realtime · about $left left';
+  }
+
+  @override
+  String get bookTranscribeDone => 'The whole book is transcribed.';
+
+  @override
+  String bookTranscribeOtherRunning(String title) {
+    return 'Already transcribing $title.';
+  }
+
+  @override
+  String get bookTranscribeChannel => 'Book transcription';
+
+  @override
+  String bookTranscribeNotifTitle(String title) {
+    return 'Transcribing $title';
+  }
+
+  @override
+  String bookTranscribeDoneNotif(String title) {
+    return 'Finished transcribing $title';
+  }
+
+  @override
+  String get bookTranscribeBatteryNotif =>
+      'Stopped: battery low. Plug in to carry on.';
+
+  @override
+  String get bookTranscribeFailedNotif =>
+      'Transcription stopped after repeated errors.';
 }

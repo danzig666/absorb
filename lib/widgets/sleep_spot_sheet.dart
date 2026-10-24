@@ -240,7 +240,7 @@ class _SleepSpotBodyState extends State<_SleepSpotBody> {
           feature: TranscriptionFeature.bookmarks,
         );
         await TranscriptLineStore.instance
-            .addLines(_key, _wordsToLines(words, start));
+            .addLines(_key, transcriptLinesFromWords(words, start));
       } on TranscriptionException catch (e) {
         if (e.kind == TranscriptionError.empty) {
           // Music or silence - nothing to show, carry on.
@@ -279,41 +279,6 @@ class _SleepSpotBodyState extends State<_SleepSpotBody> {
       case TranscriptionError.transcribeFailed:
         return l.transcriptionFailedMsg;
     }
-  }
-
-  /// Whisper hands back one word per segment (timed against the window);
-  /// gather them into sentence-sized lines in book time.
-  static List<TranscriptLine> _wordsToLines(
-    List<({double start, double end, String text})> words,
-    double offset,
-  ) {
-    final out = <TranscriptLine>[];
-    final buf = <String>[];
-    final starts = <double>[];
-    double? lineStart;
-    var lineEnd = 0.0;
-    void flush() {
-      if (buf.isEmpty) return;
-      out.add(TranscriptLine(lineStart!, lineEnd, buf.join(' '),
-          wordStarts: List.of(starts)));
-      buf.clear();
-      starts.clear();
-      lineStart = null;
-    }
-
-    for (final w in words) {
-      final s = w.start + offset;
-      final e = w.end + offset;
-      if (buf.isNotEmpty && s - lineEnd > 0.8) flush();
-      lineStart ??= s;
-      buf.add(w.text);
-      starts.add(s);
-      lineEnd = e;
-      final len = buf.fold<int>(0, (n, t) => n + t.length + 1);
-      if (RegExp(r'[.!?…]["”»)]*$').hasMatch(w.text) || len > 110) flush();
-    }
-    flush();
-    return out;
   }
 
   @override

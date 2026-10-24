@@ -1,3 +1,5 @@
+import '../services/book_transcriber.dart';
+import 'book_transcribe_sheet.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -1360,6 +1362,48 @@ class _BookDetailSheetContentState extends State<_BookDetailSheetContent> {
                       Text(l.syncPosition,
                           style: tt.labelLarge?.copyWith(
                               fontWeight: FontWeight.w600, color: accent.withValues(alpha: busy ? 0.4 : 1))),
+                    ]),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+      if (_transcriptionReady && !isEbookOnly) ...[
+        const SizedBox(height: 8),
+        ListenableBuilder(
+          listenable: BookTranscriber.instance,
+          builder: (context, _) {
+            final job = BookTranscriber.instance;
+            final running = job.isRunningFor(widget.itemId);
+            return SizedBox(
+              height: 36,
+              child: Material(
+                color: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  side: BorderSide(color: accent.withValues(alpha: 0.3)),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () => showBookTranscribeSheet(context,
+                      itemId: widget.itemId, title: title, accent: accent),
+                  child: Center(
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      running
+                          ? SizedBox.square(
+                              dimension: 14,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, value: job.fraction, color: accent))
+                          : Icon(Icons.record_voice_over_rounded, size: 16, color: accent),
+                      const SizedBox(width: 8),
+                      Text(
+                          running
+                              ? '${l.bookTranscribeButton} · ${(job.fraction * 100).toStringAsFixed(0)}%'
+                              : l.bookTranscribeButton,
+                          style: tt.labelLarge?.copyWith(
+                              fontWeight: FontWeight.w600, color: accent)),
                     ]),
                   ),
                 ),

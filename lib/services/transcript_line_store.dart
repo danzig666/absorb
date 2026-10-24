@@ -329,3 +329,39 @@ class TranscriptLineStore {
     });
   }
 }
+
+/// Gather word-by-word recognizer output (timed against a window starting at
+/// [offset] seconds into the book) into sentence-sized lines in book time,
+/// keeping each word's start for read along.
+List<TranscriptLine> transcriptLinesFromWords(
+  List<({double start, double end, String text})> words,
+  double offset,
+) {
+  final out = <TranscriptLine>[];
+  final buf = <String>[];
+  final starts = <double>[];
+  double? lineStart;
+  var lineEnd = 0.0;
+  void flush() {
+    if (buf.isEmpty) return;
+    out.add(TranscriptLine(lineStart!, lineEnd, buf.join(' '),
+        wordStarts: List.of(starts)));
+    buf.clear();
+    starts.clear();
+    lineStart = null;
+  }
+
+  for (final w in words) {
+    final s = w.start + offset;
+    final e = w.end + offset;
+    if (buf.isNotEmpty && s - lineEnd > 0.8) flush();
+    lineStart ??= s;
+    buf.add(w.text);
+    starts.add(s);
+    lineEnd = e;
+    final len = buf.fold<int>(0, (n, t) => n + t.length + 1);
+    if (RegExp(r'[.!?…]["”»)]*$').hasMatch(w.text) || len > 110) flush();
+  }
+  flush();
+  return out;
+}

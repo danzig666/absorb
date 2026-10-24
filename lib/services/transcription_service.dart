@@ -655,6 +655,44 @@ class TranscriptionService {
 
   bool get isBusy => _busy;
 
+  /// The whole book's length in seconds, from the downloaded session or the
+  /// server's track list. Null when neither can be had.
+  Future<double?> bookDurationSeconds(String itemId) async {
+    var durations = _trackDurations(itemId);
+    if (durations == null || durations.isEmpty) {
+      try {
+        final tracks = await _streamTracksFor(itemId);
+        durations = tracks?.map((t) => t.durationSeconds).toList();
+      } catch (_) {}
+    }
+    if (durations == null || durations.isEmpty) return null;
+    final total = durations.fold<double>(0, (a, b) => a + b);
+    return total > 0 ? total : null;
+  }
+
+  /// Keep the CPU running with the screen off (Android), for long jobs.
+  Future<void> setCpuWakeLock(bool on) async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod('cpuWakeLock', {'on': on});
+    } catch (e) {
+      debugPrint('[Transcribe] wake lock $on failed: $e');
+    }
+  }
+
+  /// Battery level (0-100) and whether it is charging, or null when the
+  /// platform can't say.
+  Future<({int level, bool charging})?> batteryStatus() async {
+    if (!Platform.isAndroid) return null;
+    try {
+      final m = await _channel.invokeMapMethod<String, dynamic>('batteryStatus');
+      if (m == null) return null;
+      return (level: (m['level'] as num).toInt(), charging: m['charging'] == true);
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Transcribe [windowSeconds] starting at global book time [startSeconds]
   /// and return the segments with timestamps relative to the window start.
   /// For audio-to-text alignment (Find in audiobook) - the extracted clip is
