@@ -43,6 +43,9 @@ dependencies:
 
   # Reading EPUB text without a WebView (transcript ebook cross-reference).
   archive: ^4.0.9
+  # Parakeet speech recognition (ONNX Runtime), the second transcription engine.
+  # Pinned to the version the Parakeet Redux export was tested with.
+  sherpa_onnx: 1.13.8
   html: ^0.15.4
   xml: ^6.5.0
 

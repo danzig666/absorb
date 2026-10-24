@@ -11210,4 +11210,28 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get sleepSpotNoPodcastText =>
       'Reading back the text works for audiobooks only.';
+
+  @override
+  String get transcriptionEngineSection => 'Engine';
+
+  @override
+  String get transcriptionEngineWhisper => 'Whisper';
+
+  @override
+  String get transcriptionEngineParakeet => 'Parakeet';
+
+  @override
+  String get transcriptionEngineHint =>
+      'Parakeet (NVIDIA Parakeet TDT v3 in Moondream\'s 1.58-bit Redux form) is far more accurate than Whisper outside English and writes punctuation, in 25 European languages. It needs about 1 GB of free memory while it works.';
+
+  @override
+  String get transcriptionParakeetNeedsModel =>
+      'Download the Parakeet model below to use it.';
+
+  @override
+  String get transcriptionModelParakeet => 'Parakeet Redux';
+
+  @override
+  String get transcriptionModelParakeetDesc =>
+      '25 European languages, with punctuation. About 400 MB.';
 }

@@ -6122,5 +6122,12 @@
   "sleepSpotEarlier": "Earlier",
   "sleepSpotLater": "Later",
   "sleepSpotNeedsActive": "Start playing this book first, then jump.",
-  "sleepSpotNoPodcastText": "Reading back the text works for audiobooks only."
+  "sleepSpotNoPodcastText": "Reading back the text works for audiobooks only.",
+  "transcriptionEngineSection": "Engine",
+  "transcriptionEngineWhisper": "Whisper",
+  "transcriptionEngineParakeet": "Parakeet",
+  "transcriptionEngineHint": "Parakeet (NVIDIA Parakeet TDT v3 in Moondream's 1.58-bit Redux form) is far more accurate than Whisper outside English and writes punctuation, in 25 European languages. It needs about 1 GB of free memory while it works.",
+  "transcriptionParakeetNeedsModel": "Download the Parakeet model below to use it.",
+  "transcriptionModelParakeet": "Parakeet Redux",
+  "transcriptionModelParakeetDesc": "25 European languages, with punctuation. About 400 MB."
 }

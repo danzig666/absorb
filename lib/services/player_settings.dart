@@ -232,6 +232,17 @@ class PlayerSettings {
     _notify();
   }
 
+  /// Which speech engine transcribes: 'whisper' or 'parakeet'.
+  static Future<String> getTranscriptionEngine() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('transcriptionEngine') ?? 'whisper';
+  }
+  static Future<void> setTranscriptionEngine(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('transcriptionEngine', value);
+    _notify();
+  }
+
   /// How much audio a bookmark transcription covers, in seconds.
   static Future<int> getTranscriptionWindowSeconds() async {
     final prefs = await SharedPreferences.getInstance();

@@ -318,11 +318,8 @@ class _BookDetailSheetContentState extends State<_BookDetailSheetContent> {
 
   Future<void> _checkTranscriptionReady() async {
     if (!await PlayerSettings.getTranscriptionEnabled()) return;
-    for (final size in TranscriptionModelSize.values) {
-      if (await TranscriptionService.instance.isModelDownloaded(size)) {
-        if (mounted) setState(() => _transcriptionReady = true);
-        return;
-      }
+    if (await TranscriptionService.instance.hasAnyModel()) {
+      if (mounted) setState(() => _transcriptionReady = true);
     }
   }
 

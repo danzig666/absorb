@@ -19316,6 +19316,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reading back the text works for audiobooks only.'**
   String get sleepSpotNoPodcastText;
+
+  /// No description provided for @transcriptionEngineSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Engine'**
+  String get transcriptionEngineSection;
+
+  /// No description provided for @transcriptionEngineWhisper.
+  ///
+  /// In en, this message translates to:
+  /// **'Whisper'**
+  String get transcriptionEngineWhisper;
+
+  /// No description provided for @transcriptionEngineParakeet.
+  ///
+  /// In en, this message translates to:
+  /// **'Parakeet'**
+  String get transcriptionEngineParakeet;
+
+  /// No description provided for @transcriptionEngineHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Parakeet (NVIDIA Parakeet TDT v3 in Moondream\'s 1.58-bit Redux form) is far more accurate than Whisper outside English and writes punctuation, in 25 European languages. It needs about 1 GB of free memory while it works.'**
+  String get transcriptionEngineHint;
+
+  /// No description provided for @transcriptionParakeetNeedsModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Download the Parakeet model below to use it.'**
+  String get transcriptionParakeetNeedsModel;
+
+  /// No description provided for @transcriptionModelParakeet.
+  ///
+  /// In en, this message translates to:
+  /// **'Parakeet Redux'**
+  String get transcriptionModelParakeet;
+
+  /// No description provided for @transcriptionModelParakeetDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'25 European languages, with punctuation. About 400 MB.'**
+  String get transcriptionModelParakeetDesc;
 }
 
 class _AppLocalizationsDelegate

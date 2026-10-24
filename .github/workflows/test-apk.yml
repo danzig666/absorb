@@ -84,7 +84,9 @@ jobs:
           fi
 
       - name: Build APK
-        run: flutter build apk --release --flavor dev
+        # arm64 only: what current phones run, and it keeps the two
+        # speech engines' native libraries from multiplying by four ABIs.
+        run: flutter build apk --release --flavor dev --target-platform android-arm64
 
       - name: Name the APK
         id: apk

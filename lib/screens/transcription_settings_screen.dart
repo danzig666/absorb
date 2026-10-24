@@ -4,6 +4,7 @@ import '../l10n/app_localizations.dart';
 import '../services/player_settings.dart';
 import '../services/transcription_service.dart';
 import '../services/lyrics_service.dart';
+import '../services/parakeet_engine.dart';
 import '../services/sync_point_store.dart';
 import '../services/transcript_line_store.dart';
 import '../widgets/overlay_toast.dart';
@@ -34,6 +35,9 @@ class _TranscriptionSettingsScreenState
   int _readAlongColor = PlayerSettings.defaultReadAlongColor;
   final Map<TranscriptionModelSize, bool> _downloaded = {};
   TranscriptionModelSize? _downloading;
+  String _engine = 'whisper';
+  bool _parakeetDownloaded = false;
+  bool _parakeetDownloading = false;
   double _progress = 0;
   int _transcriptCacheBytes = 0;
 
@@ -54,6 +58,8 @@ class _TranscriptionSettingsScreenState
     for (final s in TranscriptionModelSize.values) {
       _downloaded[s] = await TranscriptionService.instance.isModelDownloaded(s);
     }
+    _engine = await PlayerSettings.getTranscriptionEngine();
+    _parakeetDownloaded = await ParakeetEngine.instance.isDownloaded();
     _transcriptCacheBytes = await TranscriptLineStore.instance.cacheBytes();
     if (mounted) setState(() => _loaded = true);
   }
@@ -123,6 +129,45 @@ class _TranscriptionSettingsScreenState
 
   void _cancelDownload() {
     TranscriptionService.instance.cancelActiveDownload();
+    ParakeetEngine.instance.cancelActiveDownload();
+  }
+
+  Future<void> _setEngine(String engine) async {
+    setState(() => _engine = engine);
+    await PlayerSettings.setTranscriptionEngine(engine);
+    // Give the gigabyte back straight away rather than at the idle timeout.
+    if (engine != 'parakeet') await ParakeetEngine.instance.unload();
+  }
+
+  Future<void> _downloadParakeet() async {
+    final l = AppLocalizations.of(context)!;
+    setState(() {
+      _parakeetDownloading = true;
+      _progress = 0;
+    });
+    try {
+      await ParakeetEngine.instance.download(onProgress: (p) {
+        if (mounted) setState(() => _progress = p);
+      });
+      if (mounted) {
+        setState(() {
+          _parakeetDownloaded = true;
+          _parakeetDownloading = false;
+        });
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _parakeetDownloading = false);
+      _parakeetDownloaded = await ParakeetEngine.instance.isDownloaded();
+      if (!mounted) return;
+      showOverlayToast(context, l.transcriptionDownloadFailed,
+          icon: Icons.error_outline_rounded);
+    }
+  }
+
+  Future<void> _deleteParakeet() async {
+    await ParakeetEngine.instance.delete();
+    if (mounted) setState(() => _parakeetDownloaded = false);
   }
 
   Future<void> _delete(TranscriptionModelSize size) async {
@@ -136,7 +181,9 @@ class _TranscriptionSettingsScreenState
     final tt = Theme.of(context).textTheme;
     final l = AppLocalizations.of(context)!;
 
-    final anyDownloaded = _downloaded.values.any((d) => d);
+    final anyDownloaded = _engine == 'parakeet'
+        ? _parakeetDownloaded
+        : _downloaded.values.any((d) => d);
 
     return Scaffold(
       appBar: AppBar(
@@ -210,11 +257,41 @@ class _TranscriptionSettingsScreenState
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                     child: Text(
-                      l.transcriptionNeedModelHint,
+                      _engine == 'parakeet'
+                          ? l.transcriptionParakeetNeedsModel
+                          : l.transcriptionNeedModelHint,
                       style: tt.bodySmall?.copyWith(color: cs.error),
                     ),
                   ),
                 const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Text(l.transcriptionEngineSection,
+                      style: tt.titleSmall?.copyWith(color: cs.primary)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SegmentedButton<String>(
+                    segments: [
+                      ButtonSegment(
+                          value: 'whisper',
+                          label: Text(l.transcriptionEngineWhisper)),
+                      ButtonSegment(
+                          value: 'parakeet',
+                          label: Text(l.transcriptionEngineParakeet)),
+                    ],
+                    selected: {_engine},
+                    onSelectionChanged: (sel) => _setEngine(sel.first),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Text(
+                    l.transcriptionEngineHint,
+                    style: tt.bodySmall
+                        ?.copyWith(color: cs.onSurfaceVariant, height: 1.35),
+                  ),
+                ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                   child: Text(l.transcriptionModelSection,
@@ -244,6 +321,7 @@ class _TranscriptionSettingsScreenState
                   tt: tt,
                   l: l,
                 ),
+                _parakeetTile(cs, tt, l),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                   child: Text(
@@ -468,7 +546,9 @@ class _TranscriptionSettingsScreenState
       trailing = TextButton.icon(
         icon: const Icon(Icons.download_rounded, size: 18),
         label: Text(l.transcriptionDownload),
-        onPressed: _downloading == null ? () => _download(size) : null,
+        onPressed: _downloading == null && !_parakeetDownloading
+            ? () => _download(size)
+            : null,
       );
     }
 
@@ -480,4 +560,44 @@ class _TranscriptionSettingsScreenState
     );
   }
 
+  Widget _parakeetTile(ColorScheme cs, TextTheme tt, AppLocalizations l) {
+    Widget trailing;
+    if (_parakeetDownloading) {
+      trailing = Row(mainAxisSize: MainAxisSize.min, children: [
+        SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(
+              strokeWidth: 2.5, value: _progress > 0 ? _progress : null),
+        ),
+        const SizedBox(width: 4),
+        IconButton(
+          icon: const Icon(Icons.close_rounded),
+          tooltip: l.cancel,
+          onPressed: _cancelDownload,
+        ),
+      ]);
+    } else if (_parakeetDownloaded) {
+      trailing = Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.check_circle_rounded, color: cs.primary, size: 20),
+        IconButton(
+          icon: Icon(Icons.delete_outline_rounded, color: cs.onSurfaceVariant),
+          tooltip: l.delete,
+          onPressed: _deleteParakeet,
+        ),
+      ]);
+    } else {
+      trailing = TextButton.icon(
+        icon: const Icon(Icons.download_rounded, size: 18),
+        label: Text(l.transcriptionDownload),
+        onPressed: _downloading == null ? _downloadParakeet : null,
+      );
+    }
+    return ListTile(
+      title: Text(l.transcriptionModelParakeet),
+      subtitle: Text(l.transcriptionModelParakeetDesc,
+          style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant, height: 1.35)),
+      trailing: trailing,
+    );
+  }
 }

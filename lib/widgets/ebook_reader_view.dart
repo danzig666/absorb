@@ -3628,14 +3628,7 @@ class EbookReaderViewState extends State<EbookReaderView> with WidgetsBindingObs
     final l = AppLocalizations.of(context)!;
     final lib = context.read<LibraryProvider>();
     if (lib.getProgressData(widget.itemId)?['isFinished'] == true) return;
-    var hasModel = false;
-    for (final size in TranscriptionModelSize.values) {
-      if (await transcription.isModelDownloaded(size)) {
-        hasModel = true;
-        break;
-      }
-    }
-    if (!hasModel) return;
+    if (!await transcription.hasAnyModel()) return;
     final player = AudioPlayerService();
     final live = player.currentItemId == widget.itemId &&
         player.currentEpisodeId == null;

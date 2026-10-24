@@ -16,6 +16,7 @@ import '../providers/library_provider.dart';
 import 'api_service.dart';
 import 'audio_player_service.dart';
 import 'download_service.dart';
+import 'parakeet_engine.dart';
 import 'remote_audio_slice.dart';
 import '../utils/whisper_language.dart';
 
@@ -493,6 +494,26 @@ class TranscriptionService {
     }
   }
 
+  /// The Whisper model to run for one job, or null when the Parakeet engine
+  /// is chosen. Throws modelMissing when the chosen engine has nothing on the
+  /// device.
+  Future<TranscriptionModelInfo?> _engineFor(
+      bool? preferAccuracy, TranscriptionFeature feature) async {
+    if (await PlayerSettings.getTranscriptionEngine() == 'parakeet') {
+      if (!await ParakeetEngine.instance.isDownloaded()) {
+        throw TranscriptionException(TranscriptionError.modelMissing);
+      }
+      lastModelUsed = null;
+      return null;
+    }
+    final info = await _modelFor(preferAccuracy, feature);
+    if (!await isModelDownloaded(info.size)) {
+      throw TranscriptionException(TranscriptionError.modelMissing);
+    }
+    lastModelUsed = info.size;
+    return info;
+  }
+
   /// Which model to run for one job.
   ///
   /// [preferAccuracy] says whether the words have to stand on their own. When
@@ -548,11 +569,8 @@ class TranscriptionService {
     }
     if (_busy) throw TranscriptionException(TranscriptionError.busy);
 
-    final info = await _modelFor(preferAccuracy, feature);
-    if (!await isModelDownloaded(info.size)) {
-      throw TranscriptionException(TranscriptionError.modelMissing);
-    }
-    lastModelUsed = info.size;
+    final info = await _engineFor(preferAccuracy, feature);
+    final modelName = info?.fileName ?? 'parakeet-redux';
 
     final double gStart = (positionSeconds - leadSeconds).clamp(0.0, double.infinity);
     final at = await _locate(itemId, gStart);
@@ -587,27 +605,33 @@ class TranscriptionService {
       final String text;
       final lang = _langFor(itemId);
       try {
-        _markStep('audio decoded, running whisper ${info.fileName}');
-        final result = await _whisper.transcribe(
-          model: info.whisperModel,
-          audioPath: wavPath,
-          lang: lang,
-          convert: false, // we always hand it a ready 16kHz WAV
-          withTimestamps: false,
-          // Audiobooks are wall-to-wall speech, and Silero turned out to cost
-          // more per window than the transcription itself.
-          vadMode: WhisperVadMode.disabled,
-          threads: _threads(),
-        );
-        text = (result?.transcription.text ?? '').trim();
-        _noteEngine(result);
-        _cacheLanguage(itemId, result?.language, text.isNotEmpty);
+        _markStep('audio decoded, running $modelName');
+        if (info == null) {
+          text = (await ParakeetEngine.instance
+                  .transcribeWav(wavPath, threads: _threads()))
+              .text;
+        } else {
+          final result = await _whisper.transcribe(
+            model: info.whisperModel,
+            audioPath: wavPath,
+            lang: lang,
+            convert: false, // we always hand it a ready 16kHz WAV
+            withTimestamps: false,
+            // Audiobooks are wall-to-wall speech, and Silero turned out to cost
+            // more per window than the transcription itself.
+            vadMode: WhisperVadMode.disabled,
+            threads: _threads(),
+          );
+          text = (result?.transcription.text ?? '').trim();
+          _noteEngine(result);
+          _cacheLanguage(itemId, result?.language, text.isNotEmpty);
+        }
       } catch (e) {
         if (e is TranscriptionException) rethrow;
         throw TranscriptionException(TranscriptionError.transcribeFailed, e);
       }
       debugPrint('[Transcribe] window=${window.toStringAsFixed(1)}s '
-          'model=${info.fileName} lang=$lang extract=${extractMs}ms '
+          'model=$modelName lang=$lang extract=${extractMs}ms '
           'whisper=${watch.elapsedMilliseconds - extractMs}ms '
           'engine=${Whisper.usesCompatEngine ? 'compat' : 'fast'} '
           'chars=${text.length}');
@@ -647,11 +671,8 @@ class TranscriptionService {
     }
     if (_busy) throw TranscriptionException(TranscriptionError.busy);
 
-    final info = await _modelFor(preferAccuracy, feature);
-    if (!await isModelDownloaded(info.size)) {
-      throw TranscriptionException(TranscriptionError.modelMissing);
-    }
-    lastModelUsed = info.size;
+    final info = await _engineFor(preferAccuracy, feature);
+    final modelName = info?.fileName ?? 'parakeet-redux';
 
     final double gStart = startSeconds.clamp(0.0, double.infinity);
     final at = await _locate(itemId, gStart);
@@ -680,40 +701,47 @@ class TranscriptionService {
       final List<({double start, double end, String text})> segments;
       final lang = _langFor(itemId);
       try {
-        _markStep('audio decoded, running whisper ${info.fileName}');
-        final result = await _whisper.transcribe(
-          model: info.whisperModel,
-          audioPath: wavPath,
-          lang: lang,
-          convert: false,
-          withTimestamps: true,
-          // See transcribeAt - Silero cost more per window than whisper.
-          vadMode: WhisperVadMode.disabled,
-          // This path feeds the live transcript, where a late answer is as
-          // bad as a wrong one. A failed window just gets skipped over.
-          noFallback: true,
-          // One word per segment with real token timestamps. Without this,
-          // word timing is interpolated across multi-second segments and the
-          // read-along highlight drifts between anchors.
-          splitOnWord: true,
-          threads: _threads(),
-        );
-        segments = (result?.transcription.segments ?? const [])
-            .map((s) => (
-                  start: s.fromTs.inMilliseconds / 1000.0,
-                  end: s.toTs.inMilliseconds / 1000.0,
-                  text: s.text.trim(),
-                ))
-            .where((s) => s.text.isNotEmpty)
-            .toList();
-        _noteEngine(result);
-        _cacheLanguage(itemId, result?.language, segments.isNotEmpty);
+        _markStep('audio decoded, running $modelName');
+        if (info == null) {
+          // Word by word, like Whisper's splitOnWord below.
+          segments = (await ParakeetEngine.instance
+                  .transcribeWav(wavPath, threads: _threads()))
+              .words;
+        } else {
+          final result = await _whisper.transcribe(
+            model: info.whisperModel,
+            audioPath: wavPath,
+            lang: lang,
+            convert: false,
+            withTimestamps: true,
+            // See transcribeAt - Silero cost more per window than whisper.
+            vadMode: WhisperVadMode.disabled,
+            // This path feeds the live transcript, where a late answer is as
+            // bad as a wrong one. A failed window just gets skipped over.
+            noFallback: true,
+            // One word per segment with real token timestamps. Without this,
+            // word timing is interpolated across multi-second segments and the
+            // read-along highlight drifts between anchors.
+            splitOnWord: true,
+            threads: _threads(),
+          );
+          segments = (result?.transcription.segments ?? const [])
+              .map((s) => (
+                    start: s.fromTs.inMilliseconds / 1000.0,
+                    end: s.toTs.inMilliseconds / 1000.0,
+                    text: s.text.trim(),
+                  ))
+              .where((s) => s.text.isNotEmpty)
+              .toList();
+          _noteEngine(result);
+          _cacheLanguage(itemId, result?.language, segments.isNotEmpty);
+        }
       } catch (e) {
         if (e is TranscriptionException) rethrow;
         throw TranscriptionException(TranscriptionError.transcribeFailed, e);
       }
       debugPrint('[Transcribe] segments window=${window.toStringAsFixed(1)}s '
-          'model=${info.fileName} lang=$lang extract=${extractMs}ms '
+          'model=$modelName lang=$lang extract=${extractMs}ms '
           'whisper=${watch.elapsedMilliseconds - extractMs}ms '
           'threads=${_threads()} engine=${Whisper.usesCompatEngine ? 'compat' : 'fast'} '
           'segments=${segments.length}');
@@ -737,8 +765,22 @@ class TranscriptionService {
     TranscriptionFeature feature = TranscriptionFeature.readAlong,
   }) async {
     if (!await PlayerSettings.getTranscriptionEnabled()) return false;
+    if (await PlayerSettings.getTranscriptionEngine() == 'parakeet') {
+      return ParakeetEngine.instance.isDownloaded();
+    }
     final info = await _modelFor(null, feature);
     return isModelDownloaded(info.size);
+  }
+
+  /// Some model for the chosen engine is on the device.
+  Future<bool> hasAnyModel() async {
+    if (await PlayerSettings.getTranscriptionEngine() == 'parakeet') {
+      return ParakeetEngine.instance.isDownloaded();
+    }
+    for (final size in TranscriptionModelSize.values) {
+      if (await isModelDownloaded(size)) return true;
+    }
+    return false;
   }
 
   /// Decode [durationSeconds] of [source] from [startSeconds] (seconds into
@@ -769,35 +811,38 @@ class TranscriptionService {
       throw TranscriptionException(TranscriptionError.disabled);
     }
     if (_busy) throw TranscriptionException(TranscriptionError.busy);
-    final info = await _modelFor(preferAccuracy, feature);
-    if (!await isModelDownloaded(info.size)) {
-      throw TranscriptionException(TranscriptionError.modelMissing);
-    }
-    lastModelUsed = info.size;
+    final info = await _engineFor(preferAccuracy, feature);
+    final modelName = info?.fileName ?? 'parakeet-redux';
     _busy = true;
     final watch = Stopwatch()..start();
     try {
       final lang = _langFor(itemId);
       final String text;
       try {
-        _markStep('audio decoded, running whisper ${info.fileName}');
-        final result = await _whisper.transcribe(
-          model: info.whisperModel,
-          audioPath: wavPath,
-          lang: lang,
-          convert: false,
-          withTimestamps: false,
-          vadMode: WhisperVadMode.disabled,
-          threads: _threads(),
-        );
-        text = (result?.transcription.text ?? '').trim();
-        _noteEngine(result);
-        if (itemId != null) _cacheLanguage(itemId, result?.language, text.isNotEmpty);
+        _markStep('audio decoded, running $modelName');
+        if (info == null) {
+          text = (await ParakeetEngine.instance
+                  .transcribeWav(wavPath, threads: _threads()))
+              .text;
+        } else {
+          final result = await _whisper.transcribe(
+            model: info.whisperModel,
+            audioPath: wavPath,
+            lang: lang,
+            convert: false,
+            withTimestamps: false,
+            vadMode: WhisperVadMode.disabled,
+            threads: _threads(),
+          );
+          text = (result?.transcription.text ?? '').trim();
+          _noteEngine(result);
+          if (itemId != null) _cacheLanguage(itemId, result?.language, text.isNotEmpty);
+        }
       } catch (e) {
         if (e is TranscriptionException) rethrow;
         throw TranscriptionException(TranscriptionError.transcribeFailed, e);
       }
-      debugPrint('[Transcribe] wav model=${info.fileName} lang=$lang '
+      debugPrint('[Transcribe] wav model=$modelName lang=$lang '
           'whisper=${watch.elapsedMilliseconds}ms chars=${text.length}');
       if (text.isEmpty) throw TranscriptionException(TranscriptionError.empty);
       return text;
@@ -818,36 +863,39 @@ class TranscriptionService {
       throw TranscriptionException(TranscriptionError.disabled);
     }
     if (_busy) throw TranscriptionException(TranscriptionError.busy);
-    final info = await _modelFor(null, feature);
-    if (!await isModelDownloaded(info.size)) {
-      throw TranscriptionException(TranscriptionError.modelMissing);
-    }
-    lastModelUsed = info.size;
+    final info = await _engineFor(null, feature);
+    final modelName = info?.fileName ?? 'parakeet-redux';
     _busy = true;
     try {
       final lang = _langFor(itemId);
       final List<({double start, double end, String text})> segments;
       try {
-        _markStep('audio decoded, running whisper ${info.fileName}');
-        final result = await _whisper.transcribe(
-          model: info.whisperModel,
-          audioPath: wavPath,
-          lang: lang,
-          convert: false,
-          withTimestamps: true,
-          vadMode: WhisperVadMode.disabled,
-          threads: _threads(),
-        );
-        segments = (result?.transcription.segments ?? const [])
-            .map((s) => (
-                  start: s.fromTs.inMilliseconds / 1000.0,
-                  end: s.toTs.inMilliseconds / 1000.0,
-                  text: s.text.trim(),
-                ))
-            .where((s) => s.text.isNotEmpty)
-            .toList();
-        _noteEngine(result);
-        if (itemId != null) _cacheLanguage(itemId, result?.language, segments.isNotEmpty);
+        _markStep('audio decoded, running $modelName');
+        if (info == null) {
+          segments = (await ParakeetEngine.instance
+                  .transcribeWav(wavPath, threads: _threads()))
+              .sentences;
+        } else {
+          final result = await _whisper.transcribe(
+            model: info.whisperModel,
+            audioPath: wavPath,
+            lang: lang,
+            convert: false,
+            withTimestamps: true,
+            vadMode: WhisperVadMode.disabled,
+            threads: _threads(),
+          );
+          segments = (result?.transcription.segments ?? const [])
+              .map((s) => (
+                    start: s.fromTs.inMilliseconds / 1000.0,
+                    end: s.toTs.inMilliseconds / 1000.0,
+                    text: s.text.trim(),
+                  ))
+              .where((s) => s.text.isNotEmpty)
+              .toList();
+          _noteEngine(result);
+          if (itemId != null) _cacheLanguage(itemId, result?.language, segments.isNotEmpty);
+        }
       } catch (e) {
         if (e is TranscriptionException) rethrow;
         throw TranscriptionException(TranscriptionError.transcribeFailed, e);

@@ -293,9 +293,7 @@ class ReadListenSync {
     if (!t.canTranscribeBook(itemId)) {
       return (log: 'this book can not be transcribed', say: (AppLocalizations l) => l.transcriptionNotDownloadedBook);
     }
-    for (final size in TranscriptionModelSize.values) {
-      if (await t.isModelDownloaded(size)) return null;
-    }
+    if (await t.hasAnyModel()) return null;
     return (log: 'no transcription model downloaded', say: (AppLocalizations l) => l.transcriptionNoModelDownloaded);
   }
 

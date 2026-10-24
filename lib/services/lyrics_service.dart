@@ -464,8 +464,9 @@ class LyricsService extends ChangeNotifier {
     if (_forceFastModel || !(_slowChunks >= 2 || rate < speed * 0.6)) return;
     _forceFastModel = true;
     _slowChunks = 0;
-    final fastest = TranscriptionService.instance.lastModelUsed ==
-        TranscriptionModelSize.tiny;
+    // Null means Parakeet ran, which has no faster model to fall back to.
+    final used = TranscriptionService.instance.lastModelUsed;
+    final fastest = used == null || used == TranscriptionModelSize.tiny;
     if (fastest) {
       // Already on the fastest model: nothing to switch to, and the gaps are
       // this device's limit rather than a setting to fix. Keep the measured
