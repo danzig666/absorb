@@ -80,7 +80,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ? l.appVersionFormat(_appVersion)
         : '$_flavorLabel - $_appVersion';
     final beta = betaNumberFor(_appVersion);
-    return beta == null ? base : '$base (${l.betaLabel(beta)})';
+    final line = beta == null ? base : '$base (${l.betaLabel(beta)})';
+    return kBuildCommit.isEmpty ? line : '$line · $kBuildCommit';
   }
   AutoRewindSettings _rewindSettings = const AutoRewindSettings();
   double _defaultSpeed = 1.0;

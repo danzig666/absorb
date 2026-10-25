@@ -4,6 +4,11 @@
 /// stable build - it only has to be right during a beta cycle.
 const int kBetaNumber = 2;
 
+/// The commit a test build was made from (passed in by the Test APK
+/// workflow), so builds that share a version number can be told apart.
+/// Empty for regular builds.
+const String kBuildCommit = String.fromEnvironment('BUILD_COMMIT');
+
 /// The beta number to show for [version] (`1.9.3+240` or `1.9.3`), or null
 /// when this isn't a beta build. Odd patch = beta cycle, even = full release.
 int? betaNumberFor(String version) {
