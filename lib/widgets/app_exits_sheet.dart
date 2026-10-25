@@ -114,6 +114,7 @@ class _AppExitsBody extends StatelessWidget {
                       title: Text('${dateLabel(at, l)} $clock · ${_reason(reason)}'),
                       subtitle: Text(
                         [
+                          if (reason == 2) 'signal ${e['status']}',
                           'while ${_importance((e['importance'] as num).toInt())}',
                           if (rss > 0) 'memory $rss MB',
                           if (desc != null && desc.isNotEmpty) desc,
