@@ -398,9 +398,13 @@ class _SleepSpotBodyState extends State<_SleepSpotBody> {
     final awake = s.lastAwake;
     final IconData icon;
     final String ended;
-    if (s.endEvent == null) {
+    if (s.stillPlaying) {
       icon = Icons.play_arrow_rounded;
       ended = l.sleepSpotSessionOngoing;
+    } else if (s.endEvent == null) {
+      // Stopped without a pause on record: only the position says when.
+      icon = Icons.stop_rounded;
+      ended = l.sleepSpotSessionStopped(_pos(s.endPosition));
     } else if (s.endedBySleepTimer) {
       icon = Icons.bedtime_rounded;
       ended = l.sleepSpotSessionTimer(_pos(s.endPosition));

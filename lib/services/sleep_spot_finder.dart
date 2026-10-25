@@ -16,8 +16,10 @@ class ListeningSession {
   final double startPosition;
   final double endPosition;
   /// What ended it (sleep timer, pause...), or null while it is still going
-  /// or the history stops mid-way.
+  /// or when it stopped without a pause being recorded.
   final PlaybackEvent? endEvent;
+  /// Playing right now.
+  final bool stillPlaying;
   /// The last thing only an awake listener does inside it.
   final SleepSpot? lastAwake;
   /// Started by a headphone or other media button press.
@@ -32,6 +34,7 @@ class ListeningSession {
     required this.startPosition,
     required this.endPosition,
     required this.endEvent,
+    this.stillPlaying = false,
     required this.lastAwake,
     required this.fromMediaButton,
     required this.likelyAccidental,
@@ -51,7 +54,10 @@ class _Segment {
   final DateTime t0, t1;
   final double p0, p1;
   final bool playing;
-  const _Segment(this.t0, this.t1, this.p0, this.p1, this.playing);
+  /// The history entry at [t1], or null when the stretch runs to now or
+  /// ends at a point worked out between entries.
+  final PlaybackEvent? to;
+  const _Segment(this.t0, this.t1, this.p0, this.p1, this.playing, [this.to]);
 
   double positionAt(DateTime t) {
     final span = t1.difference(t0).inMilliseconds;
@@ -72,8 +78,9 @@ class SleepSpotFinder {
   /// Oldest first.
   final List<PlaybackEvent> events;
   final List<_Segment> _segments;
+  final bool _livePlaying;
 
-  SleepSpotFinder._(this.events, this._segments);
+  SleepSpotFinder._(this.events, this._segments, this._livePlaying);
 
   /// [history] in any order (the history service hands it back newest first).
   /// [speed] is the book's speed, used until the history says otherwise.
@@ -100,6 +107,7 @@ class SleepSpotFinder {
     return SleepSpotFinder._(
       events,
       _buildSegments(events, speed, livePosition, livePlaying, now ?? DateTime.now()),
+      livePosition != null && livePlaying,
     );
   }
 
@@ -151,9 +159,28 @@ class SleepSpotFinder {
       final isLast = i == events.length - 1;
       final DateTime t1;
       final double? end;
+      final PlaybackEvent? to = isLast ? null : events[i + 1];
       if (!isLast) {
         t1 = events[i + 1].timestamp;
         end = events[i + 1].positionSeconds;
+        // Not every start or stop makes it into the history (a fresh
+        // streaming session, a pause the system made). The position says it
+        // anyway: moving at a listening pace between two entries means
+        // playing, standing still means not.
+        if (e.type != PlaybackEventType.play &&
+            !_stops(e) &&
+            !_landingUnknown(e.type)) {
+          final secs = t1.difference(e.timestamp).inMilliseconds / 1000.0;
+          final delta = end - e.positionSeconds;
+          if (secs >= 10) {
+            final rate = delta / secs;
+            if (rate >= 0.25 && rate <= 5.0) {
+              playing = true;
+            } else if (delta.abs() < (secs * 0.05 > 2 ? secs * 0.05 : 2)) {
+              playing = false;
+            }
+          }
+        }
       } else {
         // Run the last stretch up to now only when the player can vouch for
         // where it is; otherwise the timeline stops at the last entry.
@@ -168,13 +195,13 @@ class SleepSpotFinder {
 
       if (!playing) {
         final p = unknownStart ? end : e.positionSeconds;
-        segs.add(_Segment(t0, t1, p, p, false));
+        segs.add(_Segment(t0, t1, p, p, false, to));
         continue;
       }
       if (unknownStart) {
         // Count back from where the next entry found it.
         final p0 = (end - secs * speed).clamp(0.0, end);
-        segs.add(_Segment(t0, t1, p0, end, true));
+        segs.add(_Segment(t0, t1, p0, end, true, to));
         continue;
       }
       final p0 = e.positionSeconds;
@@ -184,7 +211,7 @@ class SleepSpotFinder {
       // enough steady stretch also tells us what it really was.
       if (secs <= 0 || (rate >= 0.25 && rate <= 5.0)) {
         if (secs >= 60) speed = rate;
-        segs.add(_Segment(t0, t1, p0, end, true));
+        segs.add(_Segment(t0, t1, p0, end, true, to));
         continue;
       }
       // The next entry doesn't line up with steady playback - the app was
@@ -194,11 +221,11 @@ class SleepSpotFinder {
       final reachSecs = (target - p0) / speed;
       if (reachSecs <= 0 || reachSecs >= secs) {
         final p1 = p0 + secs * speed;
-        segs.add(_Segment(t0, t1, p0, p1 < target ? p1 : target, true));
+        segs.add(_Segment(t0, t1, p0, p1 < target ? p1 : target, true, to));
       } else {
         final mid = t0.add(Duration(milliseconds: (reachSecs * 1000).round()));
         segs.add(_Segment(t0, mid, p0, target, true));
-        segs.add(_Segment(mid, t1, target, target, false));
+        segs.add(_Segment(mid, t1, target, target, false, to));
       }
     }
     return segs;
@@ -263,82 +290,90 @@ class SleepSpotFinder {
   static const _accidentLength = Duration(minutes: 5);
   static const _accidentGap = Duration(minutes: 30);
 
-  /// Listening sessions, newest first, going back [within].
+  /// Listening sessions, newest first, going back [within]: each unbroken
+  /// run of playback on the timeline, however it started or stopped.
   List<ListeningSession> sessions({
     Duration within = const Duration(days: 7),
     DateTime? now,
   }) {
     final cutoff = (now ?? DateTime.now()).subtract(within);
+    final segs = _segments;
     final out = <ListeningSession>[];
-    DateTime? start;
-    double startPos = 0;
-    PlaybackEvent? awake;
-    // Awake signs after the press that started the session.
-    var laterSigns = 0;
-    var fromButton = false;
-    DateTime? lastButton;
     DateTime? prevEnd;
-    var playing = false;
+    var i = 0;
+    while (i < segs.length) {
+      if (!segs[i].playing) {
+        i++;
+        continue;
+      }
+      // Run on through playing stretches, and through a pause too short to
+      // be anything but a hiccup.
+      var k = i;
+      while (k + 1 < segs.length) {
+        final next = segs[k + 1];
+        if (next.playing) {
+          k++;
+        } else if (next.t1.difference(next.t0).inSeconds < 2 &&
+            k + 2 < segs.length &&
+            segs[k + 2].playing) {
+          k += 2;
+        } else {
+          break;
+        }
+      }
+      final first = segs[i];
+      final last = segs[k];
+      final start = first.t0;
+      final end = last.t1;
+      final stopper = last.to != null && _stops(last.to!) ? last.to : null;
+      final still = last.to == null && k == segs.length - 1 && _livePlaying;
 
-    void close(DateTime end, double endPos, PlaybackEvent? endEvent) {
-      final s = start;
-      if (s == null) return;
-      final gap = prevEnd == null ? null : s.difference(prevEnd!);
-      final length = end.difference(s);
+      PlaybackEvent? awake;
+      var laterSigns = 0;
+      var fromButton = false;
+      final from = start.subtract(const Duration(seconds: 5));
+      for (final e in events) {
+        if (e.timestamp.isBefore(from.subtract(const Duration(seconds: 1)))) continue;
+        if (e.timestamp.isAfter(end)) break;
+        if (e.type == PlaybackEventType.clickDebounce &&
+            !(e.detail ?? '').contains('suppressed') &&
+            e.timestamp.difference(start).inSeconds.abs() <= 3) {
+          fromButton = true;
+        }
+        if (e.timestamp.isBefore(from) || !_isAwakeSignal(e)) continue;
+        if (e.timestamp.difference(start).inSeconds > 5) laterSigns++;
+        awake = e;
+      }
+      SleepSpot? spot;
+      if (awake != null) {
+        final at = awake.timestamp.add(const Duration(seconds: 1));
+        spot = SleepSpot(awake.timestamp, positionAt(at) ?? awake.positionSeconds,
+            event: awake);
+      }
+
       // After a long silence, either too short to be real listening, or
       // started from the headphones and never touched again (an automatic
       // sleep timer can keep such a press playing for half an hour).
+      final gap = prevEnd == null ? null : start.difference(prevEnd);
       final afterSilence = gap == null || gap > _accidentGap;
       final accidental = afterSilence &&
-          (length < _accidentLength || (fromButton && laterSigns == 0));
-      SleepSpot? spot;
-      final a = awake;
-      if (a != null) {
-        final at = a.timestamp.add(const Duration(seconds: 1));
-        spot = SleepSpot(a.timestamp, positionAt(at) ?? a.positionSeconds, event: a);
-      }
-      if (!s.isBefore(cutoff)) {
+          (end.difference(start) < _accidentLength ||
+              (fromButton && laterSigns == 0));
+      if (!start.isBefore(cutoff)) {
         out.add(ListeningSession(
-          start: s,
+          start: start,
           end: end,
-          startPosition: startPos,
-          endPosition: endPos,
-          endEvent: endEvent,
+          startPosition: first.p0,
+          endPosition: last.p1,
+          endEvent: stopper,
+          stillPlaying: still,
           lastAwake: spot,
           fromMediaButton: fromButton,
           likelyAccidental: accidental,
         ));
       }
       prevEnd = end;
-      start = null;
-      awake = null;
-      laterSigns = 0;
-    }
-
-    for (final e in events) {
-      if (e.type == PlaybackEventType.clickDebounce &&
-          !(e.detail ?? '').contains('suppressed')) {
-        lastButton = e.timestamp;
-      }
-      if (e.type == PlaybackEventType.play && !playing) {
-        playing = true;
-        start = e.timestamp;
-        startPos = e.positionSeconds;
-        fromButton = lastButton != null &&
-            e.timestamp.difference(lastButton).inSeconds.abs() <= 3;
-      }
-      if (playing && _isAwakeSignal(e)) {
-        if (awake != null) laterSigns++;
-        awake = e;
-      }
-      if (playing && _stops(e)) {
-        playing = false;
-        close(e.timestamp, e.positionSeconds, e);
-      }
-    }
-    if (playing) {
-      final end = coveredUntil ?? events.last.timestamp;
-      close(end, positionAt(end) ?? events.last.positionSeconds, null);
+      i = k + 1;
     }
     return out.reversed.toList();
   }

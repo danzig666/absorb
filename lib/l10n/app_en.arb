@@ -6215,5 +6215,13 @@
   "sleepSpotSessionAccidental": "Short play after a long silence, probably by accident",
   "sleepSpotSessionFromButton": "Started from the headphones",
   "sleepSpotJumpToStop": "Where it stopped",
-  "sleepSpotShowEarlier": "Show earlier"
+  "sleepSpotShowEarlier": "Show earlier",
+  "sleepSpotSessionStopped": "Stopped at {position}",
+  "@sleepSpotSessionStopped": {
+    "placeholders": {
+      "position": {
+        "type": "String"
+      }
+    }
+  }
 }

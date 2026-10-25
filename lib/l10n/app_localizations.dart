@@ -19502,6 +19502,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show earlier'**
   String get sleepSpotShowEarlier;
+
+  /// No description provided for @sleepSpotSessionStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped at {position}'**
+  String sleepSpotSessionStopped(String position);
 }
 
 class _AppLocalizationsDelegate

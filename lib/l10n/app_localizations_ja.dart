@@ -11326,4 +11326,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get sleepSpotShowEarlier => 'Show earlier';
+
+  @override
+  String sleepSpotSessionStopped(String position) {
+    return 'Stopped at $position';
+  }
 }

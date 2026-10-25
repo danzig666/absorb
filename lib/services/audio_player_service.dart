@@ -4567,6 +4567,7 @@ class AudioPlayerService extends ChangeNotifier {
         return _abandonStart(null, null, 'local, before play');
       }
       _player!.play();
+      _logEvent(PlaybackEventType.play, detail: 'Started playing');
       _scheduleAudioDiagnostics('local');
       notifyListeners();
       _setupSync();
@@ -4795,6 +4796,7 @@ class AudioPlayerService extends ChangeNotifier {
       }
       _cachedStartReconcileGeneration = playbackGeneration;
       _player!.play();
+      _logEvent(PlaybackEventType.play, detail: 'Started playing');
       _scheduleAudioDiagnostics('cached-session');
       notifyListeners();
       _setupSync();
@@ -5257,6 +5259,7 @@ class AudioPlayerService extends ChangeNotifier {
         return _abandonStart(api, ownSessionId, 'before play');
       }
       _player!.play();
+      _logEvent(PlaybackEventType.play, detail: 'Started playing');
       _scheduleAudioDiagnostics('stream');
       notifyListeners();
       _setupSync();
@@ -5481,6 +5484,7 @@ class AudioPlayerService extends ChangeNotifier {
         return;
       }
       _player!.play();
+      _logEvent(PlaybackEventType.play, detail: 'Started playing');
       _scheduleAudioDiagnostics('transcoded');
       notifyListeners();
       _setupSync();
