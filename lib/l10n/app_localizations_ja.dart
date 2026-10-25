@@ -11331,4 +11331,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String sleepSpotSessionStopped(String position) {
     return 'Stopped at $position';
   }
+
+  @override
+  String get appExitsTitle => 'Recent app exits';
+
+  @override
+  String get appExitsSubtitle =>
+      'How the app stopped the last few times, from Android\'s own record';
+
+  @override
+  String get appExitsHint =>
+      'When playback stopped with nothing in the history, the reason is usually here: a crash, low memory, or the system closing the app.';
+
+  @override
+  String get appExitsNone => 'Nothing recorded.';
 }

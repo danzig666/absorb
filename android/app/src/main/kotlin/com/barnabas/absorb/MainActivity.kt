@@ -229,6 +229,28 @@ class MainActivity : AudioServiceActivity() {
                         setTranscribeWakeLock(call.argument<Boolean>("on") == true)
                         result.success(true)
                     }
+                    // How this app's recent processes ended, from the system's
+                    // own record - for deaths the app's log never sees coming.
+                    "exitHistory" -> {
+                        if (Build.VERSION.SDK_INT < 30) {
+                            result.success(emptyList<Map<String, Any?>>())
+                        } else {
+                            val am = getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+                            val exits = am.getHistoricalProcessExitReasons(packageName, 0, 16)
+                            result.success(exits.map { e ->
+                                mapOf(
+                                    "time" to e.timestamp,
+                                    "reason" to e.reason,
+                                    "status" to e.status,
+                                    "importance" to e.importance,
+                                    "rssKb" to e.rss,
+                                    "pssKb" to e.pss,
+                                    "description" to e.description,
+                                    "process" to e.processName,
+                                )
+                            })
+                        }
+                    }
                     "batteryStatus" -> {
                         val bm = getSystemService(Context.BATTERY_SERVICE) as android.os.BatteryManager
                         result.success(mapOf(

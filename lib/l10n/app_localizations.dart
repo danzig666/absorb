@@ -19508,6 +19508,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stopped at {position}'**
   String sleepSpotSessionStopped(String position);
+
+  /// No description provided for @appExitsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent app exits'**
+  String get appExitsTitle;
+
+  /// No description provided for @appExitsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How the app stopped the last few times, from Android\'s own record'**
+  String get appExitsSubtitle;
+
+  /// No description provided for @appExitsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'When playback stopped with nothing in the history, the reason is usually here: a crash, low memory, or the system closing the app.'**
+  String get appExitsHint;
+
+  /// No description provided for @appExitsNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing recorded.'**
+  String get appExitsNone;
 }
 
 class _AppLocalizationsDelegate
