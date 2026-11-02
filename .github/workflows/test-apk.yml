@@ -7,11 +7,11 @@ name: Test APK
 #
 # Signing, first match wins:
 # - ANDROID_KEYSTORE_BASE64 & co., the release key, when the repo has them;
-# - TEST_KEYSTORE_BASE64, a test-only keystore (alias and passwords
-#   "absorbtest"), so every test build installs over the last one;
-# - otherwise a throwaway key kept in the Actions cache. GitHub drops a cache
-#   after a week unused, and the next build then gets a new key and can't
-#   update the installed app, so set TEST_KEYSTORE_BASE64.
+# - TEST_KEYSTORE_BASE64, a private test keystore (alias and passwords
+#   "absorbtest");
+# - otherwise android/app/test-signing/absorb-dev-test.jks, committed here so
+#   every test build installs over the last one. It is public: it only signs
+#   the Absorb Dev test flavor, and anyone can sign an APK with it.
 
 on:
   workflow_dispatch:
@@ -49,12 +49,6 @@ jobs:
           flutter-version: ${{ steps.flutter.outputs.version }}
           cache: true
 
-      - name: Restore test signing key
-        uses: actions/cache@v4
-        with:
-          path: ~/.absorb-test-key
-          key: absorb-test-signing-key-v1
-
       - name: Set up Android signing
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -72,25 +66,16 @@ jobs:
           storeFile=$RUNNER_TEMP/absorb-key.jks
           EOF
           else
-            KEY_DIR="$HOME/.absorb-test-key"
+            KEY="$GITHUB_WORKSPACE/android/app/test-signing/absorb-dev-test.jks"
             if [ -n "$TEST_KEYSTORE_BASE64" ]; then
-              mkdir -p "$KEY_DIR"
-              echo "$TEST_KEYSTORE_BASE64" | base64 -d > "$KEY_DIR/test.jks"
-            else
-              echo "::warning::No TEST_KEYSTORE_BASE64 secret - signing with a cached throwaway key, which GitHub drops after a week unused"
-            fi
-            if [ ! -f "$KEY_DIR/test.jks" ]; then
-              mkdir -p "$KEY_DIR"
-              keytool -genkeypair -v -keystore "$KEY_DIR/test.jks" \
-                -alias absorbtest -keyalg RSA -keysize 2048 -validity 10000 \
-                -storepass absorbtest -keypass absorbtest \
-                -dname "CN=Absorb test build"
+              KEY="$RUNNER_TEMP/absorb-test.jks"
+              echo "$TEST_KEYSTORE_BASE64" | base64 -d > "$KEY"
             fi
             cat > android/key.properties <<EOF
           storePassword=absorbtest
           keyPassword=absorbtest
           keyAlias=absorbtest
-          storeFile=$KEY_DIR/test.jks
+          storeFile=$KEY
           EOF
           fi
 
