@@ -84,6 +84,7 @@ class _SleepSpotBodyState extends State<_SleepSpotBody> {
   List<ListeningSession> _sessions = const [];
   ListeningSession? _selected;
   bool _showAllSessions = false;
+  bool _showShortPlays = false;
   SleepSpot? _clockSpot;
   TimeOfDay? _pickedTime;
   bool _pickedTimeMissing = false;
@@ -355,9 +356,15 @@ class _SleepSpotBodyState extends State<_SleepSpotBody> {
       ]);
 
   Widget _sessionsCard(AppLocalizations l, ColorScheme cs, TextTheme tt) {
-    final shown = _showAllSessions
+    // Short plays (a press in the night, a fumble) stay out of the way
+    // unless asked for.
+    final shortCount = _sessions.where((s) => s.likelyAccidental).length;
+    final visible = _showShortPlays
         ? _sessions
-        : _sessions.take(_sessionsShown).toList();
+        : _sessions.where((s) => !s.likelyAccidental).toList();
+    final shown = _showAllSessions
+        ? visible
+        : visible.take(_sessionsShown).toList();
     final selected = _selected;
     return _card(cs, [
       _cardTitle(Icons.history_rounded, l.sleepSpotSessionsTitle, tt),
@@ -366,12 +373,24 @@ class _SleepSpotBodyState extends State<_SleepSpotBody> {
           style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
       const SizedBox(height: 6),
       for (final s in shown) _sessionTile(l, cs, tt, s, identical(s, selected)),
-      if (!_showAllSessions && _sessions.length > _sessionsShown)
-        TextButton.icon(
-          onPressed: () => setState(() => _showAllSessions = true),
-          icon: const Icon(Icons.expand_more_rounded),
-          label: Text(l.sleepSpotShowEarlier),
-        ),
+      Wrap(spacing: 4, children: [
+        if (!_showAllSessions && visible.length > _sessionsShown)
+          TextButton.icon(
+            onPressed: () => setState(() => _showAllSessions = true),
+            icon: const Icon(Icons.expand_more_rounded),
+            label: Text(l.sleepSpotShowEarlier),
+          ),
+        if (shortCount > 0)
+          TextButton.icon(
+            onPressed: () => setState(() => _showShortPlays = !_showShortPlays),
+            icon: Icon(_showShortPlays
+                ? Icons.visibility_off_outlined
+                : Icons.touch_app_outlined),
+            label: Text(_showShortPlays
+                ? l.sleepSpotHideShort
+                : l.sleepSpotShowShort('$shortCount')),
+          ),
+      ]),
       if (selected != null)
         Padding(
           padding: const EdgeInsets.only(top: 8),

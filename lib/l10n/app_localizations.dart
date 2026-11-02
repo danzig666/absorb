@@ -19446,7 +19446,7 @@ abstract class AppLocalizations {
   /// No description provided for @sleepSpotSessionsHint.
   ///
   /// In en, this message translates to:
-  /// **'Pick the stretch you fell asleep in. Short plays after a long silence are marked as likely accidental.'**
+  /// **'Pick the stretch you fell asleep in. Plays under three minutes are left out.'**
   String get sleepSpotSessionsHint;
 
   /// No description provided for @sleepSpotSessionAwake.
@@ -19482,7 +19482,7 @@ abstract class AppLocalizations {
   /// No description provided for @sleepSpotSessionAccidental.
   ///
   /// In en, this message translates to:
-  /// **'Short play after a long silence, probably by accident'**
+  /// **'Under three minutes, probably by accident'**
   String get sleepSpotSessionAccidental;
 
   /// No description provided for @sleepSpotSessionFromButton.
@@ -19532,6 +19532,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nothing recorded.'**
   String get appExitsNone;
+
+  /// No description provided for @sleepSpotShowShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Show {count} short plays'**
+  String sleepSpotShowShort(String count);
+
+  /// No description provided for @sleepSpotHideShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide short plays'**
+  String get sleepSpotHideShort;
 }
 
 class _AppLocalizationsDelegate

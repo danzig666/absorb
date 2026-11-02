@@ -11197,7 +11197,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get sleepSpotSessionsHint =>
-      'Pick the stretch you fell asleep in. Short plays after a long silence are marked as likely accidental.';
+      'Pick the stretch you fell asleep in. Plays under three minutes are left out.';
 
   @override
   String sleepSpotSessionAwake(String time, String position) {
@@ -11224,7 +11224,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get sleepSpotSessionAccidental =>
-      'Short play after a long silence, probably by accident';
+      'Under three minutes, probably by accident';
 
   @override
   String get sleepSpotSessionFromButton => 'Started from the headphones';
@@ -11253,4 +11253,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get appExitsNone => 'Nothing recorded.';
+
+  @override
+  String sleepSpotShowShort(String count) {
+    return 'Show $count short plays';
+  }
+
+  @override
+  String get sleepSpotHideShort => 'Hide short plays';
 }

@@ -6175,7 +6175,7 @@
   "bookTranscribeBatteryNotif": "Stopped: battery low. Plug in to carry on.",
   "bookTranscribeFailedNotif": "Transcription stopped after repeated errors.",
   "sleepSpotSessionsTitle": "Recent listening",
-  "sleepSpotSessionsHint": "Pick the stretch you fell asleep in. Short plays after a long silence are marked as likely accidental.",
+  "sleepSpotSessionsHint": "Pick the stretch you fell asleep in. Plays under three minutes are left out.",
   "sleepSpotSessionAwake": "Last awake {time} at {position}",
   "@sleepSpotSessionAwake": {
     "placeholders": {
@@ -6212,7 +6212,7 @@
     }
   },
   "sleepSpotSessionOngoing": "Still playing",
-  "sleepSpotSessionAccidental": "Short play after a long silence, probably by accident",
+  "sleepSpotSessionAccidental": "Under three minutes, probably by accident",
   "sleepSpotSessionFromButton": "Started from the headphones",
   "sleepSpotJumpToStop": "Where it stopped",
   "sleepSpotShowEarlier": "Show earlier",
@@ -6227,5 +6227,14 @@
   "appExitsTitle": "Recent app exits",
   "appExitsSubtitle": "How the app stopped the last few times, from Android's own record",
   "appExitsHint": "When playback stopped with nothing in the history, the reason is usually here: a crash, low memory, or the system closing the app.",
-  "appExitsNone": "Nothing recorded."
+  "appExitsNone": "Nothing recorded.",
+  "sleepSpotShowShort": "Show {count} short plays",
+  "@sleepSpotShowShort": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "sleepSpotHideShort": "Hide short plays"
 }
